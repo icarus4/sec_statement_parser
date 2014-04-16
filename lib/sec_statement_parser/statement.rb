@@ -11,6 +11,7 @@ module SecStatementParser
       return nil if symbol.empty?
 
       @symbol = symbol.upcase
+      @urls = StatementUrlList::get(@symbol)
     end
   end
 end
