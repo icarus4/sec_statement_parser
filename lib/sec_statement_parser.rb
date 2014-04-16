@@ -1,5 +1,10 @@
+require 'rubygems'
+require 'nokogiri'
+require 'open-uri'
+require 'pp'
+require 'faraday'
+require 'colorize'
+require 'date'
 require "sec_statement_parser/version"
-
-module SecStatementParser
-  # Your code goes here...
-end
+require 'sec_statement_parser/utilities'
+require 'sec_statement_parser/statement'
