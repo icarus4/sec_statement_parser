@@ -4,14 +4,18 @@ module SecStatementParser
   module StatementUrlList
 
     BASE_SEC_URL = "http://www.sec.gov"
-    ANNUAL_REPORT_NAME = "10-K"
+    ANNUAL_REPORT = "10-K"
+    QUARTERLY_REPORT = "10-Q"
     ENTRIES_PER_PAGE = 100
 
     def self.get(symbol)
 
       list = {}
-      return nil if (list_10K = self.get_list(symbol, ANNUAL_REPORT_NAME)) == nil
+      return nil if (list_10K = self.get_list(symbol, ANNUAL_REPORT)) == nil
       list['10-K'] = list_10K
+
+      return nil if (list_10Q = self.get_list(symbol, QUARTERLY_REPORT)) == nil
+      list['10-Q'] = list_10Q
 
       return list
     end
@@ -24,15 +28,15 @@ module SecStatementParser
       type = type.upcase
 
       # Validate input
-      if type != "10-K"
-        puts "Support 10-K only"
+      if type != ANNUAL_REPORT && type != QUARTERLY_REPORT
+        puts "Support #{ANNUAL_REPORT} only"
         return nil
       end
 
       # Get html
       query_url = "http://www.sec.gov/cgi-bin/browse-edgar?CIK=#{symbol.downcase}&Find=Search&owner=exclude&action=getcompany&type=#{type}&count=#{ENTRIES_PER_PAGE}"
       begin
-        puts "Obtaining #{symbol.upcase}'s URL list"
+        puts "Obtaining #{symbol.upcase}'s #{type} URL list"
         doc = Nokogiri::HTML(open(query_url))
       rescue
         puts "Cannot obtain #{symbol.upcase}'s #{type}"
