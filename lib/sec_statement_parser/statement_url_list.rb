@@ -3,6 +3,8 @@ module SecStatementParser
 
   module StatementUrlList
 
+    private
+
     BASE_SEC_URL = "http://www.sec.gov"
     ANNUAL_REPORT = "10-K"
     QUARTERLY_REPORT = "10-Q"
@@ -73,7 +75,12 @@ module SecStatementParser
         if xbrl_url == nil
           next
         else
-          puts "link fail: #{xbrl_url}".red if Faraday.head(xbrl_url).status != 200
+          if Faraday.head(xbrl_url).status != 200
+            puts "link fail: #{xbrl_url}".red
+          else
+            puts "get #{xbrl_url}"
+          end
+
           url_list << xbrl_url
         end
       end
