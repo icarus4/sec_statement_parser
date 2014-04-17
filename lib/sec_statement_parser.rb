@@ -5,7 +5,7 @@ require 'pp'
 require 'faraday'
 require 'colorize'
 require 'date'
-require "sec_statement_parser/version"
+require 'sec_statement_parser/version'
 require 'sec_statement_parser/utilities'
 require 'sec_statement_parser/statement_url_list'
 require 'sec_statement_parser/statement'

@@ -7,11 +7,11 @@ module SecStatementParser
 
     attr_reader (:symbol)
 
-    def initialize(symbol="")
+    def initialize(symbol='')
       return nil if symbol.empty?
 
       @symbol = symbol.upcase
-      @urls = StatementUrlList::get(@symbol)
+      @urls = StatementUrlList.get(@symbol)
     end
   end
 end

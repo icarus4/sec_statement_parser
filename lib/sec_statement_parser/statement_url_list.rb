@@ -5,18 +5,18 @@ module SecStatementParser
 
     private
 
-    BASE_SEC_URL = "http://www.sec.gov"
-    ANNUAL_REPORT = "10-K"
-    QUARTERLY_REPORT = "10-Q"
+    BASE_SEC_URL = 'http://www.sec.gov'
+    ANNUAL_REPORT = '10-K'
+    QUARTERLY_REPORT = '10-Q'
     ENTRIES_PER_PAGE = 100
 
     def self.get(symbol)
 
       list = {}
-      return nil if (list_10K = self.get_list(symbol, ANNUAL_REPORT)) == nil
+      return nil if (list_10K = get_list(symbol, ANNUAL_REPORT)) == nil
       list['10-K'] = list_10K
 
-      return nil if (list_10Q = self.get_list(symbol, QUARTERLY_REPORT)) == nil
+      return nil if (list_10Q = get_list(symbol, QUARTERLY_REPORT)) == nil
       list['10-Q'] = list_10Q
 
       return list
@@ -53,17 +53,17 @@ module SecStatementParser
 
       # A financial statement contains "Interactive Data" implies it has XBRL format, and that's what we need.
       match_counter = 0
-      doc.css("#seriesDiv tr td").each do |node|
-        if node.css("a").text.downcase.include? "interactive data"
+      doc.css('#seriesDiv tr td').each do |node|
+        if node.css('a').text.downcase.include? 'interactive data'
           target_td_nodes << node
           match_counter += 1
         end
       end
 
-      Raise ParseError.new("No available filing page found.") if match_counter == 0
+      Raise ParseError.new('No available filing page found.') if match_counter == 0
 
       # To-do: handle exception when entries > ENTRIES_PER_PAGE (100)
-      Raise ParseError.new("Match data") if match_counter >= ENTRIES_PER_PAGE
+      Raise ParseError.new('Match data') if match_counter >= ENTRIES_PER_PAGE
 
       target_td_nodes.each do |node|
         # filing_detail_url is something like http://www.sec.gov/Archives/edgar/data/1326801/000132680114000007/0001326801-14-000007-index.htm
@@ -72,7 +72,7 @@ module SecStatementParser
         # Get URL of XBRL
         xbrl_url = self.get_xbrl_url_from_filing_detail_page(filing_detail_url)
 
-        if xbrl_url == nil
+        if xbrl_url.nil?
           next
         else
           if Faraday.head(xbrl_url).status != 200
@@ -101,16 +101,16 @@ module SecStatementParser
       # http://www.sec.gov/Archives/edgar/data/1326801/000132680114000007/0001326801-14-000007-index.htm
       doc.css("table[summary='Data Files'] tr").each do |tr|
         match = false
-        tr.css("td").each do |td|
+        tr.css('td').each do |td|
           # check whether this tr contrains xbrl instance or not
-          if td.text.upcase == "EX-101.INS"
+          if td.text.upcase == 'EX-101.INS'
             match = true
             break
           end
         end
 
         if match == true
-          xbrl_url = BASE_SEC_URL + tr.css("a")[0]['href']
+          xbrl_url = BASE_SEC_URL + tr.css('a')[0]['href']
           return xbrl_url
         end
       end

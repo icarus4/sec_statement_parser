@@ -5,7 +5,7 @@ module SecStatementParser
   module Utilities
 
     def test
-      puts "Utilities"
+      puts 'Utilities'
     end
   end
 end
