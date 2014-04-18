@@ -14,7 +14,7 @@ module SecStatementParser
     def self.get(symbol)
 
       list = {}
-      return nil if (list_10K = get_list(symbol, ANNUAL_REPORT)) == nil
+      return nil if (list_10K = _get_list(symbol, ANNUAL_REPORT)) == nil
       list['10-K'] = list_10K
 
       # Todo: enable 10-Q later
@@ -24,7 +24,10 @@ module SecStatementParser
       return list
     end
 
-    def self.get_list(symbol, type)
+
+    private
+
+    def self._get_list(symbol, type)
 
       url_list = []
       target_td_nodes = []
@@ -72,7 +75,7 @@ module SecStatementParser
         filing_detail_url = BASE_SEC_URL + node.css("a[id='documentsbutton']")[0]['href']
 
         # Get URL of XBRL
-        xbrl_url = self.get_xbrl_url_from_filing_detail_page(filing_detail_url)
+        xbrl_url = self._get_xbrl_url_from_filing_detail_page(filing_detail_url)
 
         if xbrl_url.nil?
           next
@@ -90,7 +93,7 @@ module SecStatementParser
       return url_list
     end
 
-    def self.get_xbrl_url_from_filing_detail_page(filing_detail_url)
+    def self._get_xbrl_url_from_filing_detail_page(filing_detail_url)
 
       begin
         doc = Nokogiri::HTML(open(filing_detail_url))

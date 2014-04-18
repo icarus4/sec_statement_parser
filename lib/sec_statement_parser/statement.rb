@@ -49,7 +49,7 @@ module SecStatementParser
         return nil
       end
 
-      result = SecStatementFields._parse(xml)
+      result = SecStatementFields.parse(xml)
       pp result
       result.each do |k, v|
         instance_variable_set("@#{k}", v)

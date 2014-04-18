@@ -24,7 +24,7 @@ module SecStatementParser
       }
     }
 
-    def self._parse(xml)
+    def self.parse(xml)
       result = {}
 
       @@fields[:fields_parsed_by_xpath].each do |field, xpath|
@@ -38,6 +38,9 @@ module SecStatementParser
 
       return result
     end
+
+
+    private
 
     def self._parse_method_1(xml, result, keyword)
       year = result[:fiscal_year]
