@@ -6,10 +6,10 @@ require 'sec_statement_parser/version'
 Gem::Specification.new do |spec|
   spec.name          = "sec_statement_parser"
   spec.version       = SecStatementParser::VERSION
-  spec.authors       = ["icarus4"]
+  spec.authors       = ["Stanley Chu"]
   spec.email         = ["icarus4.chu@gmail.com"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.description   = %q{A gem for parsing stock financial statement from SEC Edgar}
+  spec.summary       = %q{A gem for parsing stock financial statement from SEC Edgar}
   spec.homepage      = ""
   spec.license       = "MIT"
 
@@ -19,6 +19,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", "~> 1.3"
-  spec.add_development_dependency "rake"
+  spec.add_development_dependency "rake", "~> 10.3.0"
   spec.add_development_dependency "rspec", "~> 2.14.0"
+  spec.add_development_dependency "nokogiri", "~> 1.6.1"
+  spec.add_development_dependency "faraday", "~> 0.9.0"
+  spec.add_development_dependency "colorize", "~> 0.7.2"
 end

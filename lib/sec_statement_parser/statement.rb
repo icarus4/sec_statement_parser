@@ -16,12 +16,8 @@ module SecStatementParser
       self.__send__(:attr_reader, k)
     end
 
-    def initialize(log_level="WARN")
-
-      # Set default log level to WARN
-      log_level = "WARN" unless LOG_LEVELS.include? log_level.upcase
-      $log = Logger.new(STDOUT)
-      eval("$log.level = Logger::#{log_level.upcase}")
+    def initialize(log_level='')
+      init_logger(log_level)
     end
 
     def get(symbol='')
