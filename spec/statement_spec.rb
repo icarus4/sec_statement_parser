@@ -3,17 +3,16 @@
 require 'spec_helper'
 
 describe SecStatementParser::Statement do
+  let(:stock) { SecStatementParser::Statement.new }
 
-  describe '.initialize' do
-    subject { stock }
+  describe '.get' do
 
     context 'with invalid stock symbol' do
       pending
     end
 
     context 'with valid stock symbol' do
-      let(:stock) { SecStatementParser::Statement.new 'goog' }
-      its(:symbol) { should match 'GOOG' }
+      pending
     end
   end
 end

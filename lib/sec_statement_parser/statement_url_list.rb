@@ -9,6 +9,7 @@ module SecStatementParser
     ANNUAL_REPORT = '10-K'
     QUARTERLY_REPORT = '10-Q'
     ENTRIES_PER_PAGE = 100
+    EARLIEST_YEAR_OF_XBRL = 2010
 
     def self.get(symbol)
 
@@ -16,8 +17,9 @@ module SecStatementParser
       return nil if (list_10K = get_list(symbol, ANNUAL_REPORT)) == nil
       list['10-K'] = list_10K
 
-      return nil if (list_10Q = get_list(symbol, QUARTERLY_REPORT)) == nil
-      list['10-Q'] = list_10Q
+      # Todo: enable 10-Q later
+      # return nil if (list_10Q = get_list(symbol, QUARTERLY_REPORT)) == nil
+      # list['10-Q'] = list_10Q
 
       return list
     end
