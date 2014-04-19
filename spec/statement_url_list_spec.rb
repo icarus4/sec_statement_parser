@@ -44,4 +44,12 @@ describe SecStatementParser::StatementUrlList do
       it { should be_nil }
     end
   end
+
+  describe '._get_file_name_year' do
+    pending
+  end
+
+  describe '._get_fiscal_year' do
+    pending
+  end
 end

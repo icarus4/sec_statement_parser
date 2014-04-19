@@ -14,12 +14,22 @@ module SecStatementParser
     def self.get(symbol)
 
       list = {}
-      return nil if (list_10K = _get_list(symbol, ANNUAL_REPORT)) == nil
-      list['10-K'] = list_10K
+      return nil if (list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT)) == nil
 
-      # Todo: enable 10-Q later
-      # return nil if (list_10Q = get_list(symbol, QUARTERLY_REPORT)) == nil
-      # list['10-Q'] = list_10Q
+      fiscal_year = _get_fiscal_year(list_10K.first)
+
+      tmp_hash = {}
+      list_10K.each_with_index do |item, i|
+        # Use _year as a symbol to be a hash key.
+        _year = "y#{fiscal_year - i}"
+        # list[:annual_report]["#{_year}".to_sym] = item
+        tmp_hash["#{_year}".to_sym] = item
+      end
+
+      list[:annual_report] = tmp_hash
+
+
+      # Todo: get 10-Q
 
       return list
     end
@@ -27,7 +37,7 @@ module SecStatementParser
 
     private
 
-    def self._get_list(symbol, type)
+    def self._get_list_of_xbrl_url(symbol, type)
 
       url_list = []
       target_td_nodes = []
@@ -35,6 +45,7 @@ module SecStatementParser
       type = type.upcase
 
       # Validate input
+      # Todo: handle quarterly report
       if type != ANNUAL_REPORT && type != QUARTERLY_REPORT
         puts "Support #{ANNUAL_REPORT} only"
         return nil
@@ -121,6 +132,25 @@ module SecStatementParser
       end
 
       return nil
+    end
+
+    def self._get_fiscal_year(link)
+      begin
+        doc = Nokogiri::XML(open(link))
+      rescue
+        $log.warn("Cannot open link #{list[0]}")
+        return nil
+      end
+
+      return doc.xpath('//dei:DocumentFiscalYearFocus').text.to_i
+    end
+
+    def self._get_year_from_linkname(link)
+
+      # Todo: error handle
+
+      # ex: http://www.sec.gov/Archives/edgar/data/1403161/000140316113000011/v-20130930.xml => return 2013
+      return link.split('-')[1][0..3].to_i
     end
   end
 end

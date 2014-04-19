@@ -33,6 +33,8 @@ module SecStatementParser
         puts "Please input valid year range: #{SecStatementParser::StatementUrlList::EARLIEST_YEAR_OF_XBRL} to #{Date.today.strftime("%Y")}, your input: #{year}"
         return nil
       end
+
+      # Todo: reset fields before parse
     end
 
     def parse_file(file)
@@ -46,7 +48,6 @@ module SecStatementParser
       end
 
       result = SecStatementFields.parse(xml)
-      pp result
       result.each do |k, v|
         instance_variable_set("@#{k}", v)
       end
