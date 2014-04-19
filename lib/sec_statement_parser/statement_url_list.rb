@@ -72,10 +72,10 @@ module SecStatementParser
         end
       end
 
-      raise ParseError.new('No available filing page found.') if match_counter == 0
+      raise ParseError, 'No available filing page found.' if match_counter == 0
 
-      # To-do: handle exception when entries > ENTRIES_PER_PAGE (100)
-      raise ParseError.new('Match data') if match_counter >= ENTRIES_PER_PAGE
+      # Todo: handle exception when entries > ENTRIES_PER_PAGE (100)
+      raise ParseError, 'Match data' if match_counter >= ENTRIES_PER_PAGE
 
       target_td_nodes.each do |node|
         # filing_detail_url is something like http://www.sec.gov/Archives/edgar/data/1326801/000132680114000007/0001326801-14-000007-index.htm

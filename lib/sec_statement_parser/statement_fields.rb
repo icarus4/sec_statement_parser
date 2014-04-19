@@ -30,7 +30,7 @@ module SecStatementParser
       xml = _open_xml(input); return nil if xml.nil?
 
       @@fields[:fields_parsed_by_xpath].each do |field, xpath|
-        raise RuntimeError.new('Error xpath syntax') if !xpath.is_a? String
+        raise RuntimeError, 'Error xpath syntax' if !xpath.is_a? String
         result[field] = xml.xpath(xpath).text
       end
 
@@ -60,7 +60,7 @@ module SecStatementParser
           end
           match_count += 1
         end
-        raise ParseError.new("keyword=\"#{keyword}\" match_count=#{match_count}") if match_count != 1
+        raise ParseError, "keyword=\"#{keyword}\" match_count=#{match_count}" if match_count != 1
       end
 
       return parse_result
