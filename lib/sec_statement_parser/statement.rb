@@ -33,6 +33,14 @@ module SecStatementParser
       return nil unless year_range_is_valid(year)
 
       # Todo: reset fields before parse
+
+      link = @urls[:annual_report]["y#{year}".to_sym]
+      result = SecStatementFields.parse(link)
+
+      # Set parsed results to instance variables of Statement
+      result.each do |k, v|
+        instance_variable_set("@#{k}", v)
+      end
     end
 
     def parse_file(file)

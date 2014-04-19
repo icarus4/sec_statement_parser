@@ -24,8 +24,10 @@ module SecStatementParser
       }
     }
 
-    def self.parse(xml)
+    def self.parse(input)
       result = {}
+
+      xml = _open_xml(input); return nil if xml.nil?
 
       @@fields[:fields_parsed_by_xpath].each do |field, xpath|
         raise RuntimeError.new('Error xpath syntax') if !xpath.is_a? String
@@ -62,6 +64,43 @@ module SecStatementParser
       end
 
       return parse_result
+    end
+
+    # Return Nokogiri::XML
+    def self._open_xml(input)
+      if input.is_a? String
+        return _open_xml_link(input)
+      elsif input.is_a? File
+        return _open_xml_file(input)
+      else
+        $log.warn("Error input type")
+        return nil
+      end
+    end
+
+    def self._open_xml_link(link)
+      unless link =~ /^#{URI::regexp}$/
+        $log.error("Wrong uri format: #{link}")
+        return nil
+      end
+
+      begin
+        xml = Nokogiri::XML(open(link))
+        return xml
+      rescue
+        $log.error("Cannot open link: #{link}")
+        return nil
+      end
+    end
+
+    def self._open_xml_file(file)
+      begin
+        xml = Nokogiri::XML(file)
+        return xml
+      rescue
+        $log.error("Cannot open file")
+        return nil
+      end
     end
   end
 end

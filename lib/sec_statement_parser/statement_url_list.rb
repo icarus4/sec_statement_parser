@@ -3,8 +3,6 @@ module SecStatementParser
 
   module StatementUrlList
 
-    private
-
     BASE_SEC_URL = 'http://www.sec.gov'
     ANNUAL_REPORT = '10-K'
     QUARTERLY_REPORT = '10-Q'
@@ -18,15 +16,14 @@ module SecStatementParser
 
       fiscal_year = _get_fiscal_year(list_10K.first)
 
-      tmp_hash = {}
-      list_10K.each_with_index do |item, i|
-        # Use _year as a symbol to be a hash key.
-        _year = "y#{fiscal_year - i}"
-        # list[:annual_report]["#{_year}".to_sym] = item
-        tmp_hash["#{_year}".to_sym] = item
-      end
+      #tmp_hash = {}
+      list[:annual_report] = {}
 
-      list[:annual_report] = tmp_hash
+      list_10K.each_with_index do |item, i|
+        # Use y20xx as a symbol to be a hash key.
+        _year = "y#{fiscal_year - i}"
+        list[:annual_report]["#{_year}".to_sym] = item
+      end
 
       # Todo: get 10-Q
 
@@ -75,10 +72,10 @@ module SecStatementParser
         end
       end
 
-      Raise ParseError.new('No available filing page found.') if match_counter == 0
+      raise ParseError.new('No available filing page found.') if match_counter == 0
 
       # To-do: handle exception when entries > ENTRIES_PER_PAGE (100)
-      Raise ParseError.new('Match data') if match_counter >= ENTRIES_PER_PAGE
+      raise ParseError.new('Match data') if match_counter >= ENTRIES_PER_PAGE
 
       target_td_nodes.each do |node|
         # filing_detail_url is something like http://www.sec.gov/Archives/edgar/data/1326801/000132680114000007/0001326801-14-000007-index.htm
