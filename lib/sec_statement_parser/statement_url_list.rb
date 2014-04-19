@@ -28,7 +28,6 @@ module SecStatementParser
 
       list[:annual_report] = tmp_hash
 
-
       # Todo: get 10-Q
 
       return list

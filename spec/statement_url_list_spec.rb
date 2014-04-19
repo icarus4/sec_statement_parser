@@ -15,18 +15,18 @@ describe SecStatementParser::StatementUrlList do
     end
   end
 
-  describe '._get_list' do
+  describe '._get_list_of_xbrl_url' do
 
     context 'when input symbol is invalid' do
-      subject { SecStatementParser::StatementUrlList._get_list('invalid symbol', '10-K') }
+      subject { SecStatementParser::StatementUrlList._get_list_of_xbrl_url('invalid symbol', '10-K') }
       it { should be_nil }
     end
     context 'when input type is not 10-K' do
-      subject { SecStatementParser::StatementUrlList._get_list('fb', 'invalid type') }
+      subject { SecStatementParser::StatementUrlList._get_list_of_xbrl_url('fb', 'invalid type') }
       it { should be_nil }
     end
     context 'when input valid symbol and type' do
-      subject { SecStatementParser::StatementUrlList._get_list('fb', '10-K') }
+      subject { SecStatementParser::StatementUrlList._get_list_of_xbrl_url('fb', '10-K') }
       it { should be_kind_of(Array) }
     end
   end
