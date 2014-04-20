@@ -72,7 +72,10 @@ module SecStatementParser
         end
       end
 
-      raise ParseError, 'No available filing page found.' if match_counter == 0
+      if match_counter == 0
+        puts 'No available filing page found.'.red
+        return nil
+      end
 
       # Todo: handle exception when entries > ENTRIES_PER_PAGE (100)
       raise ParseError, 'Match data' if match_counter >= ENTRIES_PER_PAGE
