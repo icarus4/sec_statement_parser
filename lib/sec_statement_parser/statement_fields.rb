@@ -7,6 +7,8 @@ module SecStatementParser
     @@fields = {
       fields_parsed_by_xpath: {
         trading_symbol:             '//dei:TradingSymbol',
+        registrant_name:            '//dei:EntityRegistrantName',
+        document_type:              '//dei:DocumentType',
         fiscal_year:                '//dei:DocumentFiscalYearFocus',
         period:                     '//dei:DocumentFiscalPeriodFocus', # FY/Q1/Q2/Q3/Q4
         period_end_date:            '//dei:DocumentPeriodEndDate',
