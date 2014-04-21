@@ -40,6 +40,15 @@ module SecStatementParser
       result.each do |k, v|
         instance_variable_set("@#{k}", v)
       end
+
+      return result
+    end
+
+    def parse_link(link)
+
+      result = SecStatementFields.parse(link)
+
+      return result
     end
 
     def parse_file(file)
