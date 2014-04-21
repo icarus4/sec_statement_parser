@@ -5,7 +5,7 @@ module SecStatementParser
   class Statement
     include SecStatementFields
     include Debug
-    include Utilities
+
 
     attr_reader(:symbol,:urls)
 
@@ -21,11 +21,10 @@ module SecStatementParser
       init_logger(log_level)
     end
 
-    def get(symbol='')
-      return nil if symbol.empty?
+    def list(symbol='')
+      puts "Please enter symbol." or return nil if symbol.empty?
 
-      @symbol = symbol.upcase
-      @urls = StatementUrlList.get(@symbol)
+      @list = StatementUrlList.get(symbol.upcase)
     end
 
     def parse_annual_report(year)

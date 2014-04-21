@@ -1,7 +1,10 @@
-# statement_url_list
+# statement_url_list.rb
+
 module SecStatementParser
 
   module StatementUrlList
+
+    extend Utilities
 
     BASE_SEC_URL = 'http://www.sec.gov'
     ANNUAL_REPORT = '10-K'
@@ -9,7 +12,10 @@ module SecStatementParser
     ENTRIES_PER_PAGE = 100
     EARLIEST_YEAR_OF_XBRL = 2010
 
-    def self.get(symbol)
+    def self.get(symbol, start_year: StatementUrlList::EARLIEST_YEAR_OF_XBRL, end_year: Date.today.strftime("%Y").to_i)
+      return nil if start_year > end_year
+      return nil unless year_range_is_valid(start_year)
+      return nil unless year_range_is_valid(end_year)
 
       list = {}
       return nil if (list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT)) == nil
@@ -90,10 +96,14 @@ module SecStatementParser
         if xbrl_url.nil?
           next
         else
-          if Faraday.head(xbrl_url).status != 200
-            puts "link fail: #{xbrl_url}".red
-          else
-            puts "get #{xbrl_url}"
+          begin
+            if Faraday.head(xbrl_url).status != 200
+              puts "link fail: #{xbrl_url}".red
+            else
+              puts "get #{xbrl_url}"
+            end
+          rescue
+            puts "Unknown error when testing #{xbrl_url} using Faraday".red
           end
 
           url_list << xbrl_url
@@ -108,6 +118,7 @@ module SecStatementParser
       begin
         doc = Nokogiri::HTML(open(filing_detail_url))
       rescue
+        puts "open #{filing_detail_url} failed".red
         return nil
       end
 
