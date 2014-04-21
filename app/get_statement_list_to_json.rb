@@ -9,6 +9,9 @@ require 'pp'
 OUTPUT_RESULT_FILE = 'app/output/list.json'
 OUTPUT_FAILED_FILE = 'app/output/failed.txt'
 
+# Skip stocks in OUTPUT_FAILED_FILE
+skip_fail = ARGV[0] == 'skip' ? true : false
+
 # catch ctrl+c
 interrupted = false
 trap('INT') { interrupted = true }
@@ -26,57 +29,70 @@ File.open(OUTPUT_FAILED_FILE, 'r') do |f|
   end
 end
 
-begin
-  retry_counter = 0
-  File.open('./test/nasdaq_traded_stock_list.txt', 'r') do |f|
+loop do
+  begin
+    retry_counter = 0
+    File.open('./test/nasdaq_traded_stock_list.txt', 'r') do |f|
 
-    counter = 0
+      counter = 0
 
-    f.each_line do |line|
+      f.each_line do |line|
 
-      # catch ctrl+c
-      break if interrupted
+        # catch ctrl+c
+        break if interrupted
 
-      # Get symbol
-      symbol = line.split('|')[0]
-      puts "Processing #{symbol}..."
+        # Get symbol
+        symbol = line.split('|')[0]
+        puts "Processing #{symbol}..."
 
-      # Skip if already parsed
-      if result_hash.has_key?(symbol)
-        puts "Already has #{symbol}, skip"
-        next
+        # Skip if already parsed
+        if result_hash.has_key?(symbol)
+          puts "Already has #{symbol}, skip"
+          next
+        end
+
+        # Skip stocks in OUTPUT_FAILED_FILE
+        if skip_fail
+          if fail_array.include? symbol
+            puts "Skip stocks listed in #{OUTPUT_FAILED_FILE}".red
+            next
+          end
+        end
+
+        # Store failed case
+        list = s.list(symbol)
+        if list.nil?
+          fail_array << symbol unless fail_array.include? symbol
+          next
+        end
+
+        # Success
+        result_hash[symbol.to_sym] = list
+        counter += 1
+        retry_counter = 0
+
       end
-
-      # Store failed case
-      list = s.list(symbol)
-      if list.nil?
-        fail_array << symbol unless fail_array.include? symbol
-        next
-      end
-
-      # Success
-      result_hash[symbol.to_sym] = list
-      counter += 1
-      retry_counter = 0
-
     end
-  end
 
-rescue
+  rescue
 
-  puts "Unknown error, retry...".red
-  retry_counter += 1
+    puts "Unknown error, retry...".red
+    retry_counter += 1
 
-  retry if retry_counter > 3
+    retry if retry_counter > 3
 
-ensure
+  ensure
 
-  File.open(OUTPUT_RESULT_FILE, 'w') do |f|
-    f.write(result_hash.to_json)
-  end
+    File.open(OUTPUT_RESULT_FILE, 'w') do |f|
+      f.write(result_hash.to_json)
+    end
 
-  File.open(OUTPUT_FAILED_FILE, 'w') do |f|
-    f.puts(fail_array)
-  end
+    File.open(OUTPUT_FAILED_FILE, 'w') do |f|
+      f.puts(fail_array)
+    end
 
-end
+  end # end begin
+
+  break if interrupted
+
+end # end loop
