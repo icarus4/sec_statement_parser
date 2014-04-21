@@ -27,12 +27,17 @@ File.open(OUTPUT_FAILED_FILE, 'r') do |f|
 end
 
 begin
-
+  retry_counter = 0
   File.open('./test/nasdaq_traded_stock_list.txt', 'r') do |f|
 
     counter = 0
 
     f.each_line do |line|
+
+      # catch ctrl+c
+      break if interrupted
+
+      # Get symbol
       symbol = line.split('|')[0]
       puts "Processing #{symbol}..."
 
@@ -49,17 +54,20 @@ begin
         next
       end
 
+      # Success
       result_hash[symbol.to_sym] = list
       counter += 1
+      retry_counter = 0
 
-      # catch ctrl+c
-      break if interrupted
     end
   end
 
 rescue
 
-  puts "rescue"
+  puts "Unknown error, retry...".red
+  retry_counter += 1
+
+  retry if retry_counter > 3
 
 ensure
 
