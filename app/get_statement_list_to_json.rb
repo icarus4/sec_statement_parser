@@ -87,7 +87,7 @@ loop do
   ensure
 
     File.open(OUTPUT_RESULT_FILE, 'w') do |f|
-      f.write(JSON.pretty_generate result_hash)
+      f.write(JSON.pretty_generate Hash[result_hash.sort])
     end
 
     File.open(OUTPUT_FAILED_FILE, 'w') do |f|
