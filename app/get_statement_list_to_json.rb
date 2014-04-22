@@ -6,7 +6,7 @@ require 'sec_statement_parser'
 require 'json'
 require 'pp'
 
-OUTPUT_RESULT_FILE = 'app/output/list.json'
+OUTPUT_RESULT_FILE = 'app/output/list_of_xbrl_link.json'
 OUTPUT_FAILED_FILE = 'app/output/failed.txt'
 
 # Skip stocks in OUTPUT_FAILED_FILE
