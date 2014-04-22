@@ -9,7 +9,7 @@ module SecStatementParser
         trading_symbol:             '//dei:TradingSymbol',
         registrant_name:            '//dei:EntityRegistrantName',
         document_type:              '//dei:DocumentType',
-        fiscal_year:                '//dei:DocumentFiscalYearFocus',
+        fiscal_year:                '//dei:DocumentFiscalYearFocus',   # This should be parsed before fields_parsed_by_parse_method_1
         period:                     '//dei:DocumentFiscalPeriodFocus', # FY/Q1/Q2/Q3/Q4
         period_end_date:            '//dei:DocumentPeriodEndDate',
         cik:                        '//dei:EntityCentralIndexKey',

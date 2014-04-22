@@ -45,26 +45,13 @@ module SecStatementParser
     end
 
     def parse_link(link)
-
       result = SecStatementFields.parse(link)
-
       return result
     end
 
     def parse_file(file)
       return nil unless file.is_a? File
-
-      begin
-        xml = Nokogiri::XML(file)
-      rescue
-        puts 'Cannot open file'
-        return nil
-      end
-
-      result = SecStatementFields.parse(xml)
-      result.each do |k, v|
-        instance_variable_set("@#{k}", v)
-      end
+      result = SecStatementFields.parse(file)
     end
   end
 end

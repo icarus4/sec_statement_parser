@@ -27,7 +27,8 @@ module SecStatementParser
 
       list_10K.each_with_index do |item, i|
         # Use y20xx as a symbol to be a hash key.
-        _year = "y#{fiscal_year - i}"
+        year = fiscal_year.to_i - i
+        _year = "y#{year}"
         list[:annual_report]["#{_year}".to_sym] = item
       end
 
