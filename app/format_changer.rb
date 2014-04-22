@@ -1,7 +1,7 @@
 require 'json'
 require 'pp'
 
-source_hash = JSON.parse(File.read('./app/output/list_of_xbrl_link.json'))
+source_hash = JSON.parse(File.read('./app/output/list.json'))
 output_hash = {}
 
 source_hash.each do |stock, reports|
@@ -16,6 +16,6 @@ source_hash.each do |stock, reports|
   output_hash[stock] = tmp
 end
 
-File.open('./app/output/xbrl_link_list.json', 'w') do |f|
+File.open('./app/output/list_of_xbrl_link.json', 'w') do |f|
   f.write(JSON.pretty_generate output_hash)
 end
