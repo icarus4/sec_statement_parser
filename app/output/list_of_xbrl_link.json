@@ -19549,5 +19549,12 @@
       "http://www.sec.gov/Archives/edgar/data/1039065/000104746913008515/osis-20130630.xml",
       "http://www.sec.gov/Archives/edgar/data/1039065/000104746912008174/osis-20120630.xml"
     ]
+  },
+  "CHMG": {
+    "annual_report": [
+      "http://www.sec.gov/Archives/edgar/data/763563/000076356314000057/chmg-20131231.xml",
+      "http://www.sec.gov/Archives/edgar/data/763563/000076356313000110/chmg-20121231.xml",
+      "http://www.sec.gov/Archives/edgar/data/763563/000076356312000069/chmg-20111231.xml"
+    ]
   }
 }

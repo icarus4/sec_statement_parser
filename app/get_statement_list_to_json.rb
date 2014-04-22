@@ -59,8 +59,9 @@ loop do
           end
         end
 
-        # Store failed case
         list = s.list(symbol)
+
+        # Store failed case
         if list.nil?
           fail_array << symbol unless fail_array.include? symbol
           next
@@ -68,6 +69,8 @@ loop do
 
         # Success
         result_hash[symbol.to_sym] = list
+        fail_array.delete(symbol) if fail_array.include? symbol # Remove from fail list if seccess
+
         counter += 1
         retry_counter = 0
 
