@@ -70,7 +70,7 @@ module SecStatementParser
       end
 
       if match_counter == 0
-        puts 'No available filing page found.'.red
+        puts 'No available filing page found.'.yellow
         return nil
       end
 
@@ -89,12 +89,12 @@ module SecStatementParser
         else
           begin
             if Faraday.head(xbrl_url).status != 200
-              puts "link fail: #{xbrl_url}".red
+              puts "link fail: #{xbrl_url}".yellow
             else
               puts "get #{xbrl_url}"
             end
           rescue
-            puts "Unknown error when testing #{xbrl_url} using Faraday".red
+            puts "Unknown error when testing #{xbrl_url} using Faraday".yellow
           end
 
           url_list << xbrl_url
@@ -109,7 +109,7 @@ module SecStatementParser
       begin
         doc = Nokogiri::HTML(open(filing_detail_url))
       rescue
-        puts "open #{filing_detail_url} failed".red
+        puts "open #{filing_detail_url} failed".yellow
         return nil
       end
 

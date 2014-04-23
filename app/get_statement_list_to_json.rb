@@ -54,7 +54,7 @@ loop do
         # Skip stocks in OUTPUT_FAILED_FILE
         if skip_fail
           if fail_array.include? symbol
-            puts "Skip stocks listed in #{OUTPUT_FAILED_FILE}".red
+            puts "Skip stocks listed in #{OUTPUT_FAILED_FILE}".yellow
             next
           end
         end
@@ -79,7 +79,7 @@ loop do
 
   rescue
 
-    puts "Unknown error, retry...".red
+    puts "Unknown error, retry...".yellow
     retry_counter += 1
 
     retry if retry_counter > 3

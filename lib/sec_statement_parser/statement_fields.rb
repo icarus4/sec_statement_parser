@@ -5,46 +5,112 @@ module SecStatementParser
   module SecStatementFields
 
     @@fields = {
-      fields_parsed_by_xpath: {
-        trading_symbol:             '//dei:TradingSymbol',
-        registrant_name:            '//dei:EntityRegistrantName',
-        document_type:              '//dei:DocumentType',
-        fiscal_year:                '//dei:DocumentFiscalYearFocus',   # This should be parsed before fields_parsed_by_parse_method_1
-        period:                     '//dei:DocumentFiscalPeriodFocus', # FY/Q1/Q2/Q3/Q4
-        period_end_date:            '//dei:DocumentPeriodEndDate',
-        cik:                        '//dei:EntityCentralIndexKey',
-        amendment_flag:             '//dei:AmendmentFlag'              # usually be false, need to check when to be true
-      },
+      fiscal_year:                { keywords: ['dei:DocumentFiscalYearFocus'] },   # This should be parsed first
+      period:                     { keywords: ['dei:DocumentFiscalPeriodFocus'] }, # FY/Q1/Q2/Q3/Q4
+      #trading_symbol:             { keywords: ['dei:TradingSymbol'] },
+      registrant_name:            { keywords: ['dei:EntityRegistrantName'] },
+      document_type:              { keywords: ['dei:DocumentType'] },
+      period_end_date:            { keywords: ['dei:DocumentPeriodEndDate'] },
+      cik:                        { keywords: ['dei:EntityCentralIndexKey'] },
+      amendment_flag:             { keywords: ['dei:AmendmentFlag'] },              # usually be false, need to check when to be true
 
-      fields_parsed_by_parse_method_1: {
-        revenue:            'us-gaap:Revenues',
-        #cost_of_revenue:    'us-gaap:CostOfRevenue',
-        operating_income:   'us-gaap:OperatingIncomeLoss', # operating profit
-        net_income:         'us-gaap:NetIncomeLoss',
-        eps_basic:          'us-gaap:EarningsPerShareBasic',
-        eps_diluted:        'us-gaap:EarningsPerShareDiluted'
-      }
+      revenue:                    { keywords: ['us-gaap:Revenues',
+                                               'us-gaap:SalesRevenueServicesNet'] },
+      #cost_of_revenue:          { keywords: ['us-gaap:CostOfRevenue'] },
+      operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss'] }, # operating profit
+      net_income:                 { keywords: ['us-gaap:NetIncomeLoss'] },
+      eps_basic:                  { keywords: ['us-gaap:EarningsPerShareBasic'] },
+      eps_diluted:                { keywords: ['us-gaap:EarningsPerShareDiluted'] }
     }
 
     def self.parse(input)
-      result = {}
+      statement = {}
 
       xml = _open_xml(input); return nil if xml.nil?
 
-      @@fields[:fields_parsed_by_xpath].each do |field, xpath|
-        raise RuntimeError, 'Error xpath syntax' if !xpath.is_a? String
-        result[field] = xml.xpath(xpath).text
+      @@fields.each do |field, patterns|
+        puts "parsing #{field} by #{patterns}"
+        statement[field.to_sym] = _parse_field(xml, patterns, statement[:fiscal_year])
       end
 
-      @@fields[:fields_parsed_by_parse_method_1].each do |field, keyword|
-        result[field] = _parse_method_1(xml, result, keyword)
-      end
-
-      return result
+      return statement
     end
 
 
     private
+
+    def self._parse_field(xml, patterns, fiscal_year)
+      # patterns is a hash like: { keywords: ['dei:DocumentFiscalYearFocus'] }
+      keywords = _get_keywords(patterns)
+      result = _search_by_keywords_and_fiscal_year(xml, keywords, fiscal_year)
+
+      return result
+    end # def self._parse_field(xml, patterns, fiscal_year)
+
+    def self._search_by_keywords_and_fiscal_year(xml, keywords, fiscal_year)
+      result = nil
+      matched_count_by_keywords = 0
+      keywords.each do |keyword|
+        if fiscal_year.nil?
+          nodes = xml.xpath("//#{keyword}")
+        else
+          nodes = xml.xpath("//#{keyword}[contains(@contextRef, '#{fiscal_year}')]")
+        end
+
+        # Failed case: cannot find any result by keyword
+        # In this case, we try to use next keyword
+        if nodes.length == 0
+          puts "Cannot find by #{keyword}".yellow
+          next
+        end
+
+        # Success case: just find one result
+        if nodes.length == 1
+          result = nodes.text
+          matched_count_by_keywords += 1
+          next
+        end
+
+        # Not sure case: find multiple results
+        if nodes.length > 1
+          matched_count_in_nodes = 0
+          nodes.each do |node|
+            # Filter out attribute value with '_' character
+            if !node.attr('contextRef').include? '_'
+              matched_count_in_nodes += 1
+              matched_count_by_keywords +=1
+              result = node.text
+            end
+          end
+
+          case matched_count_in_nodes
+          when 0
+            puts "No matched result by using #{keyword}".yellow
+            next
+          when 1
+            next
+          else
+            puts "Match multiple result by using #{keyword}, please check. Exit.".red
+            exit
+          end
+        end # if nodes.length > 1
+      end # keywords.each do |keyword|
+
+      if matched_count_by_keywords == 1
+        return result
+      else
+        puts "Found #{matched_count_by_keywords} results by #{keywords}, please check".red
+        exit
+      end
+    end
+
+
+    def self._get_keywords(patterns)
+      patterns.each do |k, v|
+        return v if k == :keywords
+      end
+      return nil
+    end
 
     def self._parse_method_1(xml, result, keyword)
       year = result[:fiscal_year]

@@ -9,11 +9,7 @@ module SecStatementParser
 
     attr_reader(:symbol,:urls)
 
-    @@fields[:fields_parsed_by_xpath].each do |k, v|
-      self.__send__(:attr_reader, k)
-    end
-
-    @@fields[:fields_parsed_by_parse_method_1].each do |k, v|
+    @@fields.each do |k, v|
       self.__send__(:attr_reader, k)
     end
 
@@ -51,7 +47,7 @@ module SecStatementParser
 
     def parse_file(file)
       return nil unless file.is_a? File
-      result = SecStatementFields.parse(file)
+      return SecStatementFields.parse(file)
     end
   end
 end
