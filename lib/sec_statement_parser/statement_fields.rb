@@ -7,7 +7,7 @@ module SecStatementParser
     @@fields = {
       fiscal_year:                { keywords: ['dei:DocumentFiscalYearFocus'] },   # This should be parsed first
       fiscal_period:              { keywords: ['dei:DocumentFiscalPeriodFocus'] }, # FY/Q1/Q2/Q3/Q4
-      amendment_flag:             { keywords: ['dei:AmendmentFlag'] },              # usually be false, need to check when to be true
+      #amendment_flag:             { keywords: ['dei:AmendmentFlag'] },              # usually be false, need to check when to be true
       #trading_symbol:             { keywords: ['dei:TradingSymbol'] },
       registrant_name:            { keywords: ['dei:EntityRegistrantName'] },
       document_type:              { keywords: ['dei:DocumentType'] },
@@ -15,10 +15,10 @@ module SecStatementParser
       cik:                        { keywords: ['dei:EntityCentralIndexKey'] },
 
       revenue:                    { keywords: ['us-gaap:Revenues',
-                                               'us-gaap:SalesRevenueServicesNet',
-                                               'us-gaap:SalesRevenueNet'] },
+                                               'us-gaap:SalesRevenueNet',
+                                               'us-gaap:SalesRevenueServicesNet'] },
       #cost_of_revenue:          { keywords: ['us-gaap:CostOfRevenue'] },
-      operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss'] }, # operating profit
+      #operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss'] }, # operating profit
       net_income:                 { keywords: ['us-gaap:NetIncomeLoss'] },
       eps_basic:                  { keywords: ['us-gaap:EarningsPerShareBasic'] },
       eps_diluted:                { keywords: ['us-gaap:EarningsPerShareDiluted'] }
@@ -48,10 +48,10 @@ module SecStatementParser
     end # def self._parse_field(xml, patterns, fiscal_year)
 
     def self._search_by_keywords(xml, statement, keywords)
-      result = nil
+      result = []
       fiscal_year = statement[:fiscal_year]
       fiscal_period = statement[:fiscal_period]
-      matched_count_by_keywords = 0
+
       keywords.each do |keyword|
         if fiscal_year.nil?
           nodes = xml.xpath("//#{keyword}")
@@ -62,7 +62,7 @@ module SecStatementParser
           when 'FY'
             period = 'Q4YTD'
           else
-            period = "#{fiscal_period}QTD"
+            period = "#{fiscal_period}YTD"
           end
           nodes = xml.xpath("//#{keyword}[contains(@contextRef, '#{fiscal_year}#{period}')]")
         end
@@ -75,8 +75,7 @@ module SecStatementParser
 
         # Success case: just find one result
         if nodes.length == 1
-          result = nodes.text
-          matched_count_by_keywords += 1
+          result << nodes.text
           next
         end
 
@@ -87,29 +86,34 @@ module SecStatementParser
             # Filter out attribute value with '_' character
             if !node.attr('contextRef').include? '_'
               matched_count_in_nodes += 1
-              matched_count_by_keywords +=1
-              result = node.text
+              result << node.text
             end
           end
 
           case matched_count_in_nodes
           when 0
-            puts "No matched result by using #{keyword}".yellow
+            puts "#{matched_count_in_nodes} matched result by using #{keywords}".yellow
             next
           when 1
             next
           else
-            puts "Match multiple result by using #{keyword}, please check. Exit.".red
+            puts "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit.".red
             exit
           end
         end # if nodes.length > 1
       end # keywords.each do |keyword|
 
-      if matched_count_by_keywords == 1
-        return result
-      else
-        puts "Found #{matched_count_by_keywords} results by #{keywords}, please check".red
+      # Check results
+      case result.length
+      when 0
+        puts "0 result found by #{keywords}, please check.".red
         exit
+      when 1
+        return result[0].chomp
+      else
+        puts "#{result.length} results found by #{keywords}, please check".yellow
+        sleep 1
+        return result[0].chomp
       end
     end
 
@@ -121,27 +125,6 @@ module SecStatementParser
       return nil
     end
 
-    def self._parse_method_1(xml, result, keyword)
-      year = result[:fiscal_year]
-      parse_result = 0
-      match_count = 0
-
-      node_set = xml.xpath("//#{keyword}[contains(@contextRef, '#{year}Q4YTD')]")
-
-      node_set.each do |node|
-        if !node.attribute('contextRef').value.include? '_'
-          if node.text.include? '.'
-            parse_result = node.text.to_f
-          else
-            parse_result = node.text.to_i
-          end
-          match_count += 1
-        end
-        raise ParseError, "keyword=\"#{keyword}\" match_count=#{match_count}" if match_count != 1
-      end
-
-      return parse_result
-    end
 
     # Return Nokogiri::XML
     def self._open_xml(input)
