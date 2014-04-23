@@ -7,7 +7,7 @@ module SecStatementParser
     @@fields = {
       fiscal_year:                { keywords: ['dei:DocumentFiscalYearFocus'] },   # This should be parsed first
       fiscal_period:              { keywords: ['dei:DocumentFiscalPeriodFocus'] }, # FY/Q1/Q2/Q3/Q4
-      #amendment_flag:             { keywords: ['dei:AmendmentFlag'] },              # usually be false, need to check when to be true
+      # amendment_flag:             { keywords: ['dei:AmendmentFlag'] },             # usually be false, need to check when to be true
       #trading_symbol:             { keywords: ['dei:TradingSymbol'] },
       registrant_name:            { keywords: ['dei:EntityRegistrantName'] },
       document_type:              { keywords: ['dei:DocumentType'] },
@@ -82,11 +82,25 @@ module SecStatementParser
         # Not sure case: find multiple results
         if nodes.length > 1
           matched_count_in_nodes = 0
-          nodes.each do |node|
+          redo_for_class_search = false
+          nodes.each_with_index do |node, index|
             # Filter out attribute value with '_' character
-            if !node.attr('contextRef').include? '_'
-              matched_count_in_nodes += 1
-              result << node.text
+            if redo_for_class_search == false
+              if !node.attr('contextRef').include? '_'
+                matched_count_in_nodes += 1
+                result << node.text
+              end
+            else # Redo if cannot find any matched result
+              if node.attr('contextRef').include? 'CommonClassAMember'
+                matched_count_in_nodes += 1
+                result << node.text
+              end
+            end
+
+            # Redo if cannot find any matched result
+            if index == nodes.length - 1 && matched_count_in_nodes == 0 && redo_for_class_search == false
+              redo_for_class_search = true
+              redo
             end
           end
 
