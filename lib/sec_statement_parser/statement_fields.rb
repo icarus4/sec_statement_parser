@@ -6,16 +6,17 @@ module SecStatementParser
 
     @@fields = {
       fiscal_year:                { keywords: ['dei:DocumentFiscalYearFocus'] },   # This should be parsed first
-      period:                     { keywords: ['dei:DocumentFiscalPeriodFocus'] }, # FY/Q1/Q2/Q3/Q4
+      fiscal_period:              { keywords: ['dei:DocumentFiscalPeriodFocus'] }, # FY/Q1/Q2/Q3/Q4
+      amendment_flag:             { keywords: ['dei:AmendmentFlag'] },              # usually be false, need to check when to be true
       #trading_symbol:             { keywords: ['dei:TradingSymbol'] },
       registrant_name:            { keywords: ['dei:EntityRegistrantName'] },
       document_type:              { keywords: ['dei:DocumentType'] },
       period_end_date:            { keywords: ['dei:DocumentPeriodEndDate'] },
       cik:                        { keywords: ['dei:EntityCentralIndexKey'] },
-      amendment_flag:             { keywords: ['dei:AmendmentFlag'] },              # usually be false, need to check when to be true
 
       revenue:                    { keywords: ['us-gaap:Revenues',
-                                               'us-gaap:SalesRevenueServicesNet'] },
+                                               'us-gaap:SalesRevenueServicesNet',
+                                               'us-gaap:SalesRevenueNet'] },
       #cost_of_revenue:          { keywords: ['us-gaap:CostOfRevenue'] },
       operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss'] }, # operating profit
       net_income:                 { keywords: ['us-gaap:NetIncomeLoss'] },
@@ -29,8 +30,7 @@ module SecStatementParser
       xml = _open_xml(input); return nil if xml.nil?
 
       @@fields.each do |field, patterns|
-        puts "parsing #{field} by #{patterns}"
-        statement[field.to_sym] = _parse_field(xml, patterns, statement[:fiscal_year])
+        statement[field.to_sym] = _parse_field(xml, statement, patterns)
       end
 
       return statement
@@ -39,28 +39,37 @@ module SecStatementParser
 
     private
 
-    def self._parse_field(xml, patterns, fiscal_year)
+    def self._parse_field(xml, statement, patterns)
       # patterns is a hash like: { keywords: ['dei:DocumentFiscalYearFocus'] }
       keywords = _get_keywords(patterns)
-      result = _search_by_keywords_and_fiscal_year(xml, keywords, fiscal_year)
+      result = _search_by_keywords(xml, statement, keywords)
 
       return result
     end # def self._parse_field(xml, patterns, fiscal_year)
 
-    def self._search_by_keywords_and_fiscal_year(xml, keywords, fiscal_year)
+    def self._search_by_keywords(xml, statement, keywords)
       result = nil
+      fiscal_year = statement[:fiscal_year]
+      fiscal_period = statement[:fiscal_period]
       matched_count_by_keywords = 0
       keywords.each do |keyword|
         if fiscal_year.nil?
           nodes = xml.xpath("//#{keyword}")
         else
-          nodes = xml.xpath("//#{keyword}[contains(@contextRef, '#{fiscal_year}')]")
+          case fiscal_period
+          when nil
+            period = nil
+          when 'FY'
+            period = 'Q4YTD'
+          else
+            period = "#{fiscal_period}QTD"
+          end
+          nodes = xml.xpath("//#{keyword}[contains(@contextRef, '#{fiscal_year}#{period}')]")
         end
 
         # Failed case: cannot find any result by keyword
         # In this case, we try to use next keyword
         if nodes.length == 0
-          puts "Cannot find by #{keyword}".yellow
           next
         end
 
