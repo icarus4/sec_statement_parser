@@ -5,15 +5,11 @@ module SecStatementParser
   class Statement
     include SecStatementFields
     include Debug
-    include Utilities
+
 
     attr_reader(:symbol,:urls)
 
-    @@fields[:fields_parsed_by_xpath].each do |k, v|
-      self.__send__(:attr_reader, k)
-    end
-
-    @@fields[:fields_parsed_by_parse_method_1].each do |k, v|
+    @@fields.each do |k, v|
       self.__send__(:attr_reader, k)
     end
 
@@ -21,11 +17,10 @@ module SecStatementParser
       init_logger(log_level)
     end
 
-    def get(symbol='')
-      return nil if symbol.empty?
+    def list(symbol='')
+      puts "Please enter symbol." or return nil if symbol.empty?
 
-      @symbol = symbol.upcase
-      @urls = StatementUrlList.get(@symbol)
+      @list = StatementUrlList.get(symbol.upcase)
     end
 
     def parse_annual_report(year)
@@ -41,22 +36,18 @@ module SecStatementParser
       result.each do |k, v|
         instance_variable_set("@#{k}", v)
       end
+
+      return result
+    end
+
+    def parse_link(link)
+      result = SecStatementFields.parse(link)
+      return result
     end
 
     def parse_file(file)
       return nil unless file.is_a? File
-
-      begin
-        xml = Nokogiri::XML(file)
-      rescue
-        puts 'Cannot open file'
-        return nil
-      end
-
-      result = SecStatementFields.parse(xml)
-      result.each do |k, v|
-        instance_variable_set("@#{k}", v)
-      end
+      return SecStatementFields.parse(file)
     end
   end
 end
