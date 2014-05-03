@@ -75,8 +75,7 @@ module SecStatementParser
 
       if result.length == 0
         if should_presence
-          puts "0 result found, please check\nkeywords: #{keywords}".red
-          exit
+          Raise "0 result found, please check\nkeywords: #{keywords}"
         else
           puts "0 result found.\nkeywords: #{keywords}".yellow
           return nil
@@ -86,8 +85,7 @@ module SecStatementParser
       # if multiple results found and they are identical, it should be valid.
       # result.uniq.length is check whether results are identical or not.
       if result.length > 1 && result.uniq.length > 1
-        puts "#{result.length} results found, please check\nkeywords: #{keywords}\nresult: #{result}".red
-        exit
+        Raise "#{result.length} results found, please check\nkeywords: #{keywords}\nresult: #{result}"
       end
 
       return result[0].chomp
@@ -157,8 +155,7 @@ module SecStatementParser
           when 1
             next
           else
-            puts "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit.".red
-            exit
+            Raise "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit."
           end
         end # if nodes.length > 1
       end # keywords.each do |keyword|
@@ -166,16 +163,14 @@ module SecStatementParser
       # Check results
       case result.length
       when 0
-        puts "0 result found by #{keywords}, please check.".red
-        exit
+        Raise "0 result found by #{keywords}, please check."
       when 1
         return result[0].chomp
       else
         if result.uniq.length == 1
           return result[0].chomp
         else
-          puts "#{result.length} results found by #{keywords}, please check".red
-          exit
+          Raise "#{result.length} results found by #{keywords}, please check"
         end
       end
     end
