@@ -38,7 +38,7 @@ end
 stocks.each do |stock, reports| # stocks
   break if interrupted
 
-  if skip_parsed && result_hash.has_key?(stock) && fail_array.include?(stock)
+  if skip_parsed && result_hash.has_key?(stock) && !fail_array.include?(stock)
     puts "#{stock} is already parsed....skip".green
     next
   end
