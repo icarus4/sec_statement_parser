@@ -47,7 +47,14 @@ module SecStatementParser
 
     def parse_file(file)
       return nil unless file.is_a? File
-      return SecStatementFields.parse(file)
+      result = SecStatementFields.parse(file)
+
+      # Set parsed results to instance variables of Statement
+      result.each do |k, v|
+        instance_variable_set("@#{k}", v)
+      end
+
+      return result
     end
   end
 end
