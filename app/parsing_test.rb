@@ -10,6 +10,10 @@ DATA_SOURCE_FILE = 'app/output/list_of_xbrl_link.json'
 OUTPUT_STATEMENT_FILE = 'app/output/parsing_test_results.json'
 OUTPUT_FAILED_STATEMENT_FILE = 'app/output/parsing_test_failed_stocks.txt'
 
+# Skip stocks in OUTPUT_FAILED_FILE
+skip_parsed = ARGV[0] == '--skip-parsed' ? true : false
+puts "skip parsed stock".green if skip_parsed
+
 # catch ctrl+c
 interrupted = false
 trap('INT') { interrupted = true }
@@ -33,6 +37,11 @@ end
 
 stocks.each do |stock, reports| # stocks
   break if interrupted
+
+  if skip_parsed && result_hash.has_key?(stock) && fail_array.include?(stock)
+    puts "#{stock} is already parsed....skip".green
+    next
+  end
 
   # Reset hash
   statement_hash = {}
@@ -64,7 +73,7 @@ stocks.each do |stock, reports| # stocks
     end
   end
 
-  result_hash[stock.to_sym] = statement_hash
+  result_hash[stock] = statement_hash
 
 end # end stocks.each
 
