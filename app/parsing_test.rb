@@ -6,9 +6,9 @@ require 'sec_statement_parser'
 require 'json'
 require 'pp'
 
-DATA_SOURCE_FILE = 'app/output/list.json'
-OUTPUT_STATEMENT_FILE = 'app/output/statement.json'
-OUTPUT_FAILED_STATEMENT_FILE = 'app/output/failed_statement.txt'
+DATA_SOURCE_FILE = 'app/output/list_of_xbrl_link.json'
+OUTPUT_STATEMENT_FILE = 'app/output/parsing_test_results.json'
+OUTPUT_FAILED_STATEMENT_FILE = 'app/output/parsing_test_failed_stocks.txt'
 
 # catch ctrl+c
 interrupted = false
@@ -21,20 +21,14 @@ statement_hash = {}
 fail_array = []
 
 # Read statement url list
-begin
-  stocks = JSON.parse(File.read(DATA_SOURCE_FILE))
-rescue
-end
+stocks = JSON.parse(File.read(DATA_SOURCE_FILE))
 
 # Read existing results
-begin
-  result_hash = JSON.parse(File.read(OUTPUT_STATEMENT_FILE))
-  File.open(OUTPUT_FAILED_STATEMENT_FILE, 'r') do |f|
-    f.each_line do |line|
-      fail_array.push line.chomp
-    end
+result_hash = JSON.parse(File.read(OUTPUT_STATEMENT_FILE))
+File.open(OUTPUT_FAILED_STATEMENT_FILE, 'r') do |f|
+  f.each_line do |line|
+    fail_array.push line.chomp
   end
-rescue
 end
 
 stocks.each do |stock, reports| # stocks
@@ -43,15 +37,18 @@ stocks.each do |stock, reports| # stocks
   # Reset hash
   statement_hash = {}
 
-  reports.each do |report, contents| # annual_report
+  reports.each do |report, urls| # annual_report
     break if interrupted
-    contents.each do |year, url| #
+
+    urls.each do |url| #
       # catch ctrl+c
       break if interrupted
+      next if url.include? "-2009" # skip 2009's statement because their format are different..
+
+      result = {}
+      puts "Parsing #{stock}'s report... #{url}"
 
       begin
-        puts "Parsing #{stock}'s #{year} report..."
-        result = {}
         result = s.parse_link(url)
       rescue
         fail_array << stock unless fail_array.include? stock
@@ -62,12 +59,11 @@ stocks.each do |stock, reports| # stocks
         fail_array << stock unless fail_array.include? stock
       else
         pp result
-        statement_hash[year.to_sym] = result
+        statement_hash["y#{result[:fiscal_year]}".to_sym] = result
       end
     end
   end
 
-  break if interrupted
   result_hash[stock.to_sym] = statement_hash
 
 end # end stocks.each
