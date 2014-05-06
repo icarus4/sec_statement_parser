@@ -29,17 +29,25 @@ module SecStatementParser
       gross_profit:               { keywords: ['us-gaap:GrossProfit'],
                                     regex_str: REGEX_STR_TYPE1 },
       # 營業利益
-      operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss'],
+      operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss',
+                                               'us-gaap:OperatingExpenses'], # HD
                                     regex_str: REGEX_STR_TYPE1 },
-      # 淨利
+      # 稅前淨利
+      net_income_beforoe_tax:     { keywords: ['us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+                                               'us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', # HD
+                                               'v:IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest'], # V
+                                    regex_str: REGEX_STR_TYPE1 },
+      # 稅後淨利
       net_income_after_tax:       { keywords: ['us-gaap:NetIncomeLoss',
-                                               'us-gaap:ProfitLoss'], # case of V
+                                               'us-gaap:ProfitLoss'], # V
                                     regex_str: REGEX_STR_TYPE1 },
       # 營業成本 / 銷貨成本
-      cost_of_revenue:            { keywords: ['us-gaap:CostOfGoodsSold'], # case of NKE
+      cost_of_revenue:            { keywords: ['us-gaap:CostOfRevenue',
+                                               'us-gaap:CostOfGoodsSold'], # NKE
                                     regex_str: REGEX_STR_TYPE1 },
       # 總營業支出 (總營業支出 + 營業利益 = 營收) (operating_expense + operating_income = revenue)
-      total_operating_expense:    { keywords: ['us-gaap:CostsAndExpenses'],
+      total_operating_expense:    { keywords: ['us-gaap:OperatingExpenses', # HD
+                                               'us-gaap:CostsAndExpenses'],
                                     regex_str: REGEX_STR_TYPE1 },
       # EPS
       eps_basic:                  { keywords: ['us-gaap:EarningsPerShareBasic'],
@@ -133,6 +141,10 @@ module SecStatementParser
       # Valid contextRef format are as follows:
       # FD2013Q1Y / D2013Q2QTD / D2013Q4YTD / ...
       patterns[:keywords].each do |keyword|
+        # Skip this keyword if there is no keyword's namespace in xml
+        namespace = keyword.gsub(/:.*/,'')
+        next unless xml.namespaces.has_key? "xmlns:#{namespace}"
+
         nodes = xml.xpath("//#{keyword}")
         next if nodes.nil?
 
@@ -158,6 +170,10 @@ module SecStatementParser
 
       # Keep search by another contextRef format if there is no result found by the above format
       patterns[:keywords].each do |keyword|
+        # Skip this keyword if there is no keyword's namespace in xml
+        namespace = keyword.gsub(/:.*/,'')
+        next unless xml.namespaces.has_key? "xmlns:#{namespace}"
+
         nodes = xml.xpath("//#{keyword}")
         next if nodes.nil?
 
@@ -181,7 +197,7 @@ module SecStatementParser
         break unless result.empty?
       end # patterns[:keywords].each do |keyword|
 
-      puts "Parse #{field} with CommonClassAMember. Please check value.".check_value_color unless result.empty?
+      puts "Parse #{field} with CommonClassAMember. You'd better check value.".check_value_color unless result.empty?
       return result.empty? ? nil : result
     end # self._parse_multiple_mapping_field(xml, statement, field, patterns)
 
