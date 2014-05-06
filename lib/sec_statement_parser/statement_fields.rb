@@ -75,10 +75,10 @@ module SecStatementParser
 
       if result.length == 0
         if should_presence
-          puts "0 result found, please check\nkeywords: #{keywords}".red
-          raise "0 result found, please check\nkeywords: #{keywords}"
+          puts "0 result found, please check. keywords: #{keywords}".error_color
+          raise "0 result found, please check. keywords: #{keywords}"
         else
-          puts "0 result found.\nkeywords: #{keywords}".yellow
+          puts "0 result found. keywords: #{keywords}".warning_color
           return nil
         end
       end
@@ -86,8 +86,8 @@ module SecStatementParser
       # if multiple results found and they are identical, it should be valid.
       # result.uniq.length is check whether results are identical or not.
       if result.length > 1 && result.uniq.length > 1
-        puts "#{result.length} results found, please check\nkeywords: #{keywords}\nresult: #{result}".red
-        raise "#{result.length} results found, please check\nkeywords: #{keywords}\nresult: #{result}"
+        puts "#{result.length} results found, please check. keywords: #{keywords}\nresult: #{result}".error_color
+        raise "#{result.length} results found, please check. keywords: #{keywords}\nresult: #{result}"
       end
 
       return result[0].chomp
@@ -152,12 +152,12 @@ module SecStatementParser
 
           case matched_count_in_nodes
           when 0
-            puts "#{matched_count_in_nodes} matched result by using #{keywords}".yellow
+            puts "#{matched_count_in_nodes} matched result by using #{keywords}".warning_color
             next
           when 1
             next
           else
-            puts "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit.".red
+            puts "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit.".error_color
             raise "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit."
           end
         end # if nodes.length > 1
@@ -166,7 +166,7 @@ module SecStatementParser
       # Check results
       case result.length
       when 0
-        puts "0 result found by #{keywords}, please check.".red
+        puts "0 result found by #{keywords}, please check.".error_color
         raise "0 result found by #{keywords}, please check."
       when 1
         return result[0].chomp
@@ -174,7 +174,7 @@ module SecStatementParser
         if result.uniq.length == 1
           return result[0].chomp
         else
-          puts "#{result.length} results found by #{keywords}, please check".red
+          puts "#{result.length} results found by #{keywords}, please check".error_color
           raise "#{result.length} results found by #{keywords}, please check"
         end
       end
