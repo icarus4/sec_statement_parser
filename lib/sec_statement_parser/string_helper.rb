@@ -17,4 +17,8 @@ class String
   def error_color
     self.black.on_light_red
   end
+
+  def check_value_color
+    self.black.on_light_cyan
+  end
 end

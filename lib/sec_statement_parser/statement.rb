@@ -9,7 +9,7 @@ module SecStatementParser
 
     attr_reader(:symbol,:urls)
 
-    @@fields.each do |k, v|
+    @@single_mapping_fields.each do |k, v|
       self.__send__(:attr_reader, k)
     end
 
@@ -27,7 +27,7 @@ module SecStatementParser
       # Check year range
       return nil unless year_range_is_valid(year)
 
-      # Todo: reset fields before parse
+      # TODO: reset fields before parse
 
       link = @urls[:annual_report]["y#{year}".to_sym]
       result = SecStatementFields.parse(link)

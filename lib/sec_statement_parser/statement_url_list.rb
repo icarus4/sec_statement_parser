@@ -22,7 +22,7 @@ module SecStatementParser
 
       list[:annual_report] = list_10K
 
-      # Todo: get 10-Q
+      # TODO: get 10-Q
 
       return list
     end
@@ -38,7 +38,7 @@ module SecStatementParser
       type = type.upcase
 
       # Validate input
-      # Todo: handle quarterly report
+      # TODO: handle quarterly report
       if type != ANNUAL_REPORT && type != QUARTERLY_REPORT
         puts "Support #{ANNUAL_REPORT} only"
         return nil
@@ -74,7 +74,7 @@ module SecStatementParser
         return nil
       end
 
-      # Todo: handle exception when entries > ENTRIES_PER_PAGE (100)
+      # TODO: handle exception when entries > ENTRIES_PER_PAGE (100)
       raise ParseError, 'Match data' if match_counter >= ENTRIES_PER_PAGE
 
       target_td_nodes.each do |node|
@@ -148,7 +148,7 @@ module SecStatementParser
 
     def self._get_year_from_linkname(link)
 
-      # Todo: error handle
+      # TODO: error handle
 
       # ex: http://www.sec.gov/Archives/edgar/data/1403161/000140316113000011/v-20130930.xml => return 2013
       return link.split('-')[1][0..3].to_i
