@@ -62,6 +62,7 @@ module SecStatementParser
         result = _parse_multiple_mapping_field(xml, statement, field, patterns)
         if result.nil?
           puts "0 result found, keywords: #{field}".warning_color
+          statement[field] = nil
           next
         end
 
@@ -180,7 +181,7 @@ module SecStatementParser
         break unless result.empty?
       end # patterns[:keywords].each do |keyword|
 
-      puts "Parse field by searching contextRef with CommonClassAMember. Please check value.".check_value_color unless result.empty?
+      puts "Parse #{field} with CommonClassAMember. Please check value.".check_value_color unless result.empty?
       return result.empty? ? nil : result
     end # self._parse_multiple_mapping_field(xml, statement, field, patterns)
 
