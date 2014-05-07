@@ -24,37 +24,37 @@ module SecStatementParser
       revenue:                    { keywords: ['us-gaap:Revenues',
                                                'us-gaap:SalesRevenueNet',
                                                'us-gaap:SalesRevenueServicesNet'],
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 毛利
       gross_profit:               { keywords: ['us-gaap:GrossProfit'],
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 營業利益
       operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss',
                                                'us-gaap:OperatingExpenses'], # HD
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 稅前淨利
       net_income_beforoe_tax:     { keywords: ['us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
                                                'us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', # HD
                                                'v:IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest'], # V
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 稅後淨利
       net_income_after_tax:       { keywords: ['us-gaap:NetIncomeLoss',
                                                'us-gaap:ProfitLoss'], # V
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 營業成本 / 銷貨成本
       cost_of_revenue:            { keywords: ['us-gaap:CostOfRevenue',
                                                'us-gaap:CostOfGoodsSold'], # NKE
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 總營業支出 (總營業支出 + 營業利益 = 營收) (operating_expense + operating_income = revenue)
       total_operating_expense:    { keywords: ['us-gaap:OperatingExpenses', # HD
                                                'us-gaap:CostsAndExpenses'],
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
       # EPS
       eps_basic:                  { keywords: ['us-gaap:EarningsPerShareBasic'],
-                                    regex_str: REGEX_STR_TYPE1 },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
       # EPS diluted
       eps_diluted:                { keywords: ['us-gaap:EarningsPerShareDiluted'],
-                                    regex_str: REGEX_STR_TYPE1 }
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true }
     }
 
     def self.parse(input)
@@ -136,6 +136,7 @@ module SecStatementParser
 
     def self._parse_multiple_mapping_field(xml, statement, field, patterns)
       result = {}
+      should_presence = patterns[:should_presence]
 
       # For each keywords, search by contextRef with valid format.
       # Valid contextRef format are as follows:
@@ -196,6 +197,11 @@ module SecStatementParser
         end
         break unless result.empty?
       end # patterns[:keywords].each do |keyword|
+
+      if result.empty? && should_presence
+        puts "no result found, please check. field: #{field}".error_color
+        # raise "no result found, please check. field: #{field}"
+      end
 
       puts "Parse #{field} with CommonClassAMember. You'd better check value.".check_value_color unless result.empty?
       return result.empty? ? nil : result
