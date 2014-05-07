@@ -31,16 +31,16 @@ module SecStatementParser
       # 營業利益
       operating_income:           { keywords: ['OperatingIncomeLoss',
                                                'OperatingExpenses'], # HD
-                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 稅前淨利
       net_income_beforoe_tax:     { keywords: ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
                                                'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', # HD
                                                'IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest'], # V
-                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 稅後淨利
       net_income_after_tax:       { keywords: ['NetIncomeLoss',
                                                'ProfitLoss'], # V
-                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 營業成本 / 銷貨成本
       cost_of_revenue:            { keywords: ['CostOfRevenue',
                                                'CostOfGoodsSold'], # NKE
@@ -48,7 +48,7 @@ module SecStatementParser
       # 總營業支出 (總營業支出 + 營業利益 = 營收) (operating_expense + operating_income = revenue)
       total_operating_expense:    { keywords: ['OperatingExpenses', # HD
                                                'CostsAndExpenses'],
-                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
       # EPS
       eps_basic:                  { keywords: ['EarningsPerShareBasic'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
@@ -144,7 +144,8 @@ module SecStatementParser
       # For each keywords, search by contextRef with valid format.
       # Valid contextRef format are as follows:
       # FD2013Q1Y / D2013Q2QTD / D2013Q4YTD / ...
-      patterns[:keywords].each do |keyword|
+      using_regex_set = 1
+      patterns[:keywords].each_with_index do |keyword, index|
         nodes = xml.xpath("//#{keyword}")
         next if nodes.nil?
 
@@ -152,56 +153,55 @@ module SecStatementParser
         nodes.each do |node|
 
           contextRef = node.attr('contextRef')
-          case contextRef
-          when /^[FD]+#{fiscal_year}Q[1-3]YTD$/ # ex: FD2013Q1YTD
-              eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
-              when /^[FD]+#{fiscal_year}Q4YTD$/ # ex: FD2013Q4YTD
-              eval "result[:#{field}_fy] = node.text.chomp"
-              when /^[FD]+#{fiscal_year}Q[1-4]$/ # ex: FD2013Q1
-              eval "result[:#{field}_q#{contextRef[-1]}] = node.text.chomp"
-              when /^[FD]+#{fiscal_year}Q[1-4]QTD$/ # ex: FD2013Q2
-              eval "result[:#{field}_q#{contextRef[-4]}] = node.text.chomp"
-              end
-        end
+          case using_regex_set
+          # 1st regex set
+          when 1
+            case contextRef
+            when /^[FD]+#{fiscal_year}Q[1-3]YTD$/ # ex: FD2013Q1YTD
+                eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
+                when /^[FD]+#{fiscal_year}Q4YTD$/ # ex: FD2013Q4YTD
+                eval "result[:#{field}_fy] = node.text.chomp"
+                when /^[FD]+#{fiscal_year}Q[1-4]$/ # ex: FD2013Q1
+                eval "result[:#{field}_q#{contextRef[-1]}] = node.text.chomp"
+                when /^[FD]+#{fiscal_year}Q[1-4]QTD$/ # ex: FD2013Q2
+                eval "result[:#{field}_q#{contextRef[-4]}] = node.text.chomp"
+                end # case contextRef
+            # 2nd regex set
+          when 2
+            case contextRef
+            when /^[FD]+#{fiscal_year}Q[1-3]YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
+                eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
+                when /^[FD]+#{fiscal_year}Q4YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q4YTD
+                eval "result[:#{field}_fy] = node.text.chomp"
+                when /^[FD]+#{fiscal_year}Q[1-4]_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1
+                eval "result[:#{field}_q#{contextRef[-62]}] = node.text.chomp"
+                when /^[FD]+#{fiscal_year}Q[1-4]QTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q2
+                eval "result[:#{field}_q#{contextRef[-65]}] = node.text.chomp"
+                end # case contextRef
+          end
+        end # nodes.each do |node|
+
         break if result.any?
-      end # patterns[:keywords].each do |keyword|
+
+        # Prepare to parse by next regex set
+        if index == patterns[:keywords].length - 1 && using_regex_set < 2
+          using_regex_set += 1
+          redo
+        end
+
+      end # patterns[:keywords].each do |keyword, index|
 
       # Return if there is any result found
-      return result if result.any?
-
-      # Keep search by another contextRef format if there is no result found by the above format
-      patterns[:keywords].each do |keyword|
-
-        nodes = xml.xpath("//#{keyword}")
-        next if nodes.nil?
-
-        fiscal_year = statement[:fiscal_year]
-        nodes.each do |node|
-          contextRef = node.attr('contextRef')
-          case contextRef
-          when /^[FD]+#{fiscal_year}Q[1-3]YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
-              eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
-
-              when /^[FD]+#{fiscal_year}Q4YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q4YTD
-              eval "result[:#{field}_fy] = node.text.chomp"
-
-              when /^[FD]+#{fiscal_year}Q[1-4]_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1
-              eval "result[:#{field}_q#{contextRef[-62]}] = node.text.chomp"
-
-              when /^[FD]+#{fiscal_year}Q[1-4]QTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q2
-              eval "result[:#{field}_q#{contextRef[-65]}] = node.text.chomp"
-              end # case contextRef
+      if result.any?
+        puts "Parse #{field} with CommonClassAMember. You'd better check value.".check_value_color if using_regex_set == 2
+        return result
+      else
+        if should_presence
+          puts "no result found, please check. field: #{field}".error_color
+          raise "no result found, please check. field: #{field}"
         end
-        break if result.any?
-      end # patterns[:keywords].each do |keyword|
-
-      if result.empty? && should_presence
-        puts "no result found, please check. field: #{field}".error_color
-        # raise "no result found, please check. field: #{field}"
+        return nil
       end
-
-      puts "Parse #{field} with CommonClassAMember. You'd better check value.".check_value_color if result.any?
-      return result.empty? ? nil : result
     end # self._parse_multiple_mapping_field(xml, statement, field, patterns)
 
 
