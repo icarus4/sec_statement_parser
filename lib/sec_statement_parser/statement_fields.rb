@@ -5,14 +5,14 @@ module SecStatementParser
   module SecStatementFields
 
     @@single_mapping_fields = {
-      document_type:              { keywords: ['dei:DocumentType'], should_presence: true },
-      fiscal_year:                { keywords: ['dei:DocumentFiscalYearFocus'], should_presence: true },   # This should be parsed first
-      fiscal_period:              { keywords: ['dei:DocumentFiscalPeriodFocus'], should_presence: true }, # FY/Q1/Q2/Q3/Q4
-      amendment_flag:             { keywords: ['dei:AmendmentFlag'], should_presence: true },             # usually be false, need to check when to be true
-      registrant_name:            { keywords: ['dei:EntityRegistrantName'], should_presence: true },
-      period_end_date:            { keywords: ['dei:DocumentPeriodEndDate'], should_presence: true },
-      cik:                        { keywords: ['dei:EntityCentralIndexKey'], should_presence: true },
-      trading_symbol:             { keywords: ['dei:TradingSymbol'], should_presence: false }
+      document_type:              { keywords: ['DocumentType'], should_presence: true },
+      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: true },   # This should be parsed first
+      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: true }, # FY/Q1/Q2/Q3/Q4
+      amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true },             # usually be false, need to check when to be true
+      registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true },
+      period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true },
+      cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true },
+      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false }
     }
 
     # FD2013Q4YTD / D2013Q3 / FD2013Q2QTD / ...
@@ -21,39 +21,39 @@ module SecStatementParser
     @@multi_mapping_fields = {
 
       # 營收
-      revenue:                    { keywords: ['us-gaap:Revenues',
-                                               'us-gaap:SalesRevenueNet',
-                                               'us-gaap:SalesRevenueServicesNet'],
+      revenue:                    { keywords: ['Revenues',
+                                               'SalesRevenueNet',
+                                               'SalesRevenueServicesNet'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 毛利
-      gross_profit:               { keywords: ['us-gaap:GrossProfit'],
+      gross_profit:               { keywords: ['GrossProfit'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 營業利益
-      operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss',
-                                               'us-gaap:OperatingExpenses'], # HD
+      operating_income:           { keywords: ['OperatingIncomeLoss',
+                                               'OperatingExpenses'], # HD
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 稅前淨利
-      net_income_beforoe_tax:     { keywords: ['us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
-                                               'us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', # HD
-                                               'v:IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest'], # V
+      net_income_beforoe_tax:     { keywords: ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+                                               'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', # HD
+                                               'IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest'], # V
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 稅後淨利
-      net_income_after_tax:       { keywords: ['us-gaap:NetIncomeLoss',
-                                               'us-gaap:ProfitLoss'], # V
+      net_income_after_tax:       { keywords: ['NetIncomeLoss',
+                                               'ProfitLoss'], # V
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 營業成本 / 銷貨成本
-      cost_of_revenue:            { keywords: ['us-gaap:CostOfRevenue',
-                                               'us-gaap:CostOfGoodsSold'], # NKE
+      cost_of_revenue:            { keywords: ['CostOfRevenue',
+                                               'CostOfGoodsSold'], # NKE
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 總營業支出 (總營業支出 + 營業利益 = 營收) (operating_expense + operating_income = revenue)
-      total_operating_expense:    { keywords: ['us-gaap:OperatingExpenses', # HD
-                                               'us-gaap:CostsAndExpenses'],
+      total_operating_expense:    { keywords: ['OperatingExpenses', # HD
+                                               'CostsAndExpenses'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # EPS
-      eps_basic:                  { keywords: ['us-gaap:EarningsPerShareBasic'],
+      eps_basic:                  { keywords: ['EarningsPerShareBasic'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # EPS diluted
-      eps_diluted:                { keywords: ['us-gaap:EarningsPerShareDiluted'],
+      eps_diluted:                { keywords: ['EarningsPerShareDiluted'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: true }
     }
 
@@ -61,6 +61,9 @@ module SecStatementParser
       statement = {}
 
       xml = _open_xml(input); return nil if xml.nil?
+
+      # Remove all namespaces to simplify statement parsing
+      xml.remove_namespaces!
 
       @@single_mapping_fields.each do |field, patterns|
         statement[field.to_sym] = _parse_field(xml, statement, patterns)
@@ -86,7 +89,7 @@ module SecStatementParser
     private
 
     def self._parse_field(xml, statement, patterns)
-      # patterns is a hash like: { keywords: ['dei:DocumentFiscalYearFocus'], mode: :single, should_presence: true }
+      # patterns is a hash like: { keywords: ['DocumentFiscalYearFocus'], mode: :single, should_presence: true }
       keywords        = patterns[:keywords]
       should_presence = patterns[:should_presence]
       result          = nil
@@ -142,15 +145,12 @@ module SecStatementParser
       # Valid contextRef format are as follows:
       # FD2013Q1Y / D2013Q2QTD / D2013Q4YTD / ...
       patterns[:keywords].each do |keyword|
-        # Skip this keyword if there is no keyword's namespace in xml
-        namespace = keyword.gsub(/:.*/,'')
-        next unless xml.namespaces.has_key? "xmlns:#{namespace}"
-
         nodes = xml.xpath("//#{keyword}")
         next if nodes.nil?
 
         fiscal_year = statement[:fiscal_year]
         nodes.each do |node|
+
           contextRef = node.attr('contextRef')
           case contextRef
           when /^[FD]+#{fiscal_year}Q[1-3]YTD$/ # ex: FD2013Q1YTD
@@ -171,9 +171,6 @@ module SecStatementParser
 
       # Keep search by another contextRef format if there is no result found by the above format
       patterns[:keywords].each do |keyword|
-        # Skip this keyword if there is no keyword's namespace in xml
-        namespace = keyword.gsub(/:.*/,'')
-        next unless xml.namespaces.has_key? "xmlns:#{namespace}"
 
         nodes = xml.xpath("//#{keyword}")
         next if nodes.nil?
