@@ -204,92 +204,6 @@ module SecStatementParser
       return result.empty? ? nil : result
     end # self._parse_multiple_mapping_field(xml, statement, field, patterns)
 
-    def self._search_by_keywords(xml, statement, keywords)
-      result = []
-      fiscal_year = statement[:fiscal_year]
-      fiscal_period = statement[:fiscal_period]
-
-      keywords.each do |keyword|
-        if fiscal_year.nil?
-          nodes = xml.xpath("//#{keyword}")
-        else
-          case fiscal_period
-          when nil
-            period = nil
-          when 'FY'
-            period = 'Q4YTD'
-          else
-            period = "#{fiscal_period}QTD"
-          end
-          nodes = xml.xpath("//#{keyword}[contains(@contextRef, '#{fiscal_year}#{period}')]")
-        end
-
-        # Failed case: cannot find any result by keyword
-        # In this case, we try to use next keyword
-        if nodes.length == 0
-          next
-        end
-
-        # Success case: just find one result
-        if nodes.length == 1
-          result << nodes.text
-          next
-        end
-
-        # Not sure case: find multiple results
-        if nodes.length > 1
-          matched_count_in_nodes = 0
-          redo_for_class_search = false
-          nodes.each_with_index do |node, index|
-            # Filter out attribute value with '_' character
-            if redo_for_class_search == false
-              if !node.attr('contextRef').include? '_'
-                matched_count_in_nodes += 1
-                result << node.text
-              end
-            else # Redo if cannot find any matched result
-              if node.attr('contextRef').include? 'CommonClassAMember'
-                matched_count_in_nodes += 1
-                result << node.text
-              end
-            end
-
-            # Redo if cannot find any matched result
-            if index == nodes.length - 1 && matched_count_in_nodes == 0 && redo_for_class_search == false
-              redo_for_class_search = true
-              redo
-            end
-          end
-
-          case matched_count_in_nodes
-          when 0
-            puts "#{matched_count_in_nodes} matched result by using #{keywords}".warning_color
-            next
-          when 1
-            next
-          else
-            puts "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit.".error_color
-            raise "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit."
-          end
-        end # if nodes.length > 1
-      end # keywords.each do |keyword|
-
-      # Check results
-      case result.length
-      when 0
-        puts "0 result found by #{keywords}, please check.".error_color
-        raise "0 result found by #{keywords}, please check."
-      when 1
-        return result[0].chomp
-      else
-        if result.uniq.length == 1
-          return result[0].chomp
-        else
-          puts "#{result.length} results found by #{keywords}, please check".error_color
-          raise "#{result.length} results found by #{keywords}, please check"
-        end
-      end
-    end
 
     def self._remove_node_if_attr_contains(nodes, target_attr, str)
       _nodes = nodes.dup # FIXME: Here we have to use nodes.dup. But....why nodes.clone does not work???
@@ -298,6 +212,7 @@ module SecStatementParser
       end
       return nodes
     end
+
 
     def self._remove_node_if_attr_not_match_regex(nodes, target_attr, regex_str)
       regex = Regexp.new regex_str
