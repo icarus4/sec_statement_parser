@@ -163,11 +163,11 @@ module SecStatementParser
               eval "result[:#{field}_q#{contextRef[-4]}] = node.text.chomp"
               end
         end
-        break unless result.empty?
+        break if result.any?
       end # patterns[:keywords].each do |keyword|
 
       # Return if there is any result found
-      return result unless result.empty?
+      return result if result.any?
 
       # Keep search by another contextRef format if there is no result found by the above format
       patterns[:keywords].each do |keyword|
@@ -192,7 +192,7 @@ module SecStatementParser
               eval "result[:#{field}_q#{contextRef[-65]}] = node.text.chomp"
               end # case contextRef
         end
-        break unless result.empty?
+        break if result.any?
       end # patterns[:keywords].each do |keyword|
 
       if result.empty? && should_presence
@@ -200,7 +200,7 @@ module SecStatementParser
         # raise "no result found, please check. field: #{field}"
       end
 
-      puts "Parse #{field} with CommonClassAMember. You'd better check value.".check_value_color unless result.empty?
+      puts "Parse #{field} with CommonClassAMember. You'd better check value.".check_value_color if result.any?
       return result.empty? ? nil : result
     end # self._parse_multiple_mapping_field(xml, statement, field, patterns)
 
