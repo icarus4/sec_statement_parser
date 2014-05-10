@@ -206,8 +206,7 @@ module SecStatementParser
 
 
     def self._remove_node_if_attr_contains(nodes, target_attr, str)
-      _nodes = nodes.dup # FIXME: Here we have to use nodes.dup. But....why nodes.clone does not work???
-      _nodes.each do |node|
+      nodes.dup.each do |node|
         nodes.delete(node) if node.attr(target_attr).include? str
       end
       return nodes
@@ -216,14 +215,9 @@ module SecStatementParser
 
     def self._remove_node_if_attr_not_match_regex(nodes, target_attr, regex_str)
       regex = Regexp.new regex_str
-      array = []
 
-      nodes.each do |node|
-        array << node unless node.attr(target_attr) =~ regex
-      end
-
-      array.each do |node|
-        nodes.delete(node)
+      nodes.dup.each do |node|
+        nodes.delete(node) unless node.attr(target_attr) =~ regex
       end
 
       return nodes
