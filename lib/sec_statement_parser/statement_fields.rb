@@ -35,7 +35,8 @@ module SecStatementParser
       # 稅前淨利
       net_income_beforoe_tax:     { keywords: ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
                                                'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', # HD
-                                               'IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest'], # V
+                                               'IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest', # V
+                                               'IncomeLossFromContinuingOperationsBeforeEquityMethodInvestmentsIncomeTaxesExtraordinaryItems'], # PCLN
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 稅後淨利
       net_income_after_tax:       { keywords: ['NetIncomeLoss',
@@ -43,7 +44,8 @@ module SecStatementParser
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 營業成本 / 銷貨成本
       cost_of_revenue:            { keywords: ['CostOfRevenue',
-                                               'CostOfGoodsSold'], # NKE
+                                               'CostOfGoodsSold', # NKE
+                                               'CostOfGoodsAndServicesSold'], # PCLN
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 總營業支出 (總營業支出 + 營業利益 = 營收) (operating_expense + operating_income = revenue)
       total_operating_expense:    { keywords: ['OperatingExpenses', # HD
