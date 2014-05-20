@@ -19,10 +19,10 @@ module SecStatementParser
 
       list = {}
       return nil if (list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT)) == nil
+      return nil if (list_10Q = _get_list_of_xbrl_url(symbol, QUARTERLY_REPORT)) == nil
 
       list[:annual_report] = list_10K
-
-      # TODO: get 10-Q
+      list[:quarterly_report] = list_10Q
 
       return list
     end
