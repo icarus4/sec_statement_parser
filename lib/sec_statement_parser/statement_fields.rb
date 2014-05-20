@@ -159,19 +159,23 @@ module SecStatementParser
           # 1st regex set
           when 1
             case contextRef
-            when /^[FD]+#{fiscal_year}Q[1-3]YTD$/ # ex: FD2013Q1YTD
+            when /^[FD]+#{fiscal_year}Q1YTD$/ # ex: FD2013Q1YTD => xxx_q1
+                eval "result[:#{field}_q1] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[2-3]YTD$/ # ex: FD2013Q2YTD => xxx_q2ytd
                 eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q4YTD$/ # ex: FD2013Q4YTD
+                when /^[FD]+#{fiscal_year}Q4YTD$/ # ex: FD2013Q4YTD => xxx_fy
                 eval "result[:#{field}_fy] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q[1-4]$/ # ex: FD2013Q1
+                when /^[FD]+#{fiscal_year}Q[1-4]$/ # ex: FD2013Q1 => xxx_q1
                 eval "result[:#{field}_q#{contextRef[-1]}] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q[1-4]QTD$/ # ex: FD2013Q2
+                when /^[FD]+#{fiscal_year}Q[1-4]QTD$/ # ex: FD2013Q2 => xxx_q2
                 eval "result[:#{field}_q#{contextRef[-4]}] = node.text.chomp"
                 end # case contextRef
             # 2nd regex set
           when 2
             case contextRef
-            when /^[FD]+#{fiscal_year}Q[1-3]YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
+            when /^[FD]+#{fiscal_year}Q1YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
+                eval "result[:#{field}_q1] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[2-3]YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
                 eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
                 when /^[FD]+#{fiscal_year}Q4YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q4YTD
                 eval "result[:#{field}_fy] = node.text.chomp"
