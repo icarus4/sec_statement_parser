@@ -21,4 +21,8 @@ class String
   def check_value_color
     self.black.on_light_cyan
   end
+
+  def alpha?
+    !!match(/^[[:alpha:]]+$/)
+  end
 end

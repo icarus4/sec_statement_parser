@@ -11,5 +11,10 @@ module SecStatementParser
       end
       return true
     end
+
+    def puts_and_raise(str)
+      puts str.error_color
+      raise str
+    end
   end
 end
