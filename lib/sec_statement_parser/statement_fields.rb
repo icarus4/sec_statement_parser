@@ -4,21 +4,22 @@ module SecStatementParser
 
   module SecStatementFields
 
-    @@single_mapping_fields = {
+    STATEMENT_BASIC_INFO_FIELDS = {
       document_type:              { keywords: ['DocumentType'], should_presence: true },
-      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: true },   # This should be parsed first
-      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: true }, # FY/Q1/Q2/Q3/Q4
+      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: false },   # This should be parsed first
+      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: false }, # FY/Q1/Q2/Q3/Q4
       amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true },             # usually be false, need to check when to be true
       registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true },
       period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true },
       cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true },
-      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false }
+      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false },
+      category:                   { keywords: ['EntityFilerCategory'], should_presence: true }
     }
 
     # FD2013Q4YTD / D2013Q3 / FD2013Q2QTD / ...
     REGEX_STR_TYPE1 = '^[FD]+[0-9]{4}Q[1-4][QYTD]{0,3}'
 
-    @@multi_mapping_fields = {
+    STATEMENT_FIELDS = {
 
       # 營收
       revenue:                    { keywords: ['Revenues',
@@ -58,6 +59,7 @@ module SecStatementParser
       eps_diluted:                { keywords: ['EarningsPerShareDiluted'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: true }
     }
+
 
     def self.parse(input)
       statement = {}

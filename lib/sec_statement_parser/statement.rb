@@ -3,26 +3,29 @@
 module SecStatementParser
 
   class Statement
-    attr_reader :symbol
+    include Utilities
+
+    attr_reader :symbol, :result
 
     def initialize(symbol)
       @symbol = validate_symbol symbol
+      @parser = StatementParser.new
+      @statements = []
     end
 
-    def download(symbol)
-      @symbol = validate_symbol(symbol) if symbol.upcase != @symbol
+    def download(symbol=@symbol)
+      @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
       download_statements
     end
 
-    # def parse_without_download(symbol)
-    #   @symbol = validate_symbol(symbol) if symbol.upcase != @symbol
+    def parse_local(symbol=@symbol)
+      @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
+      parse_local_statements
+    end
 
-    # end
-
-    # def parse_with_download(symbol)
-    #   @symbol = validate_symbol(symbol) if symbol.upcase != @symbol
-
-    # end
+    def parse_with_download(symbol=@symbol)
+      @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
+    end
 
 
     private
@@ -30,25 +33,50 @@ module SecStatementParser
     MAX_SYMBOL_LENGTH = 8
     STATEMENT_DOWNLOAD_DIR = "#{Dir.home}/.sec_statement_parser/statements"
 
-    def download_statements
-      @url_list ||= StatementUrlList::get @symbol
-      wget_statements @symbol, @url_list
+    def parse_local_statements
+      statement_dir = "#{STATEMENT_DOWNLOAD_DIR}/#{@symbol}"
+
+      if dir_exist?(statement_dir)
+        parse_file_recursively(statement_dir)
+      else
+      end
+
+      # if found at local
+        # open file
+        # parse
+      # if not found at local
+        # get list
+        # parse
     end
 
-    def wget_statements(symbol, url_list)
-      base_path = "#{STATEMENT_DOWNLOAD_DIR}/#{symbol}"
+    def parse_file_recursively(statement_dir)
+      list_absolute_filepath_recursively(statement_dir).each do |filepath|
+        file = File.open(filepath, 'r')
+        puts "Parsing #{filepath}".green
+        @statements << @parser.parse(file)
+        file.close
+      end
+    end
+
+    def get_list
+      StatementUrlList::get @symbol
+    end
+
+    def download_statements
+      base_path = "#{STATEMENT_DOWNLOAD_DIR}/#{@symbol}"
       annual_report_path = "#{base_path}/10-K"
       quarterly_report_path = "#{base_path}/10-Q"
 
-      # Create folders to save statements
-      create_folder_if_path_not_exist(annual_report_path)
-      create_folder_if_path_not_exist(quarterly_report_path)
+      @url_list = get_list
 
-      url_list.each do |type, urls|
+      # Create dirs to save statements
+      create_dir_if_path_not_exist(annual_report_path)
+      create_dir_if_path_not_exist(quarterly_report_path)
+
+      @url_list.each do |type, urls|
         next if urls.nil?
         urls.each do |url|
-          download_folder = (type == :annual_report) ? annual_report_path : quarterly_report_path
-
+          download_dir = (type == :annual_report) ? annual_report_path : quarterly_report_path
           # -nc, --no-clobber              skip downloads that would download to existing files (overwriting them).
           # -P,  --directory-prefix=PREFIX  save files to PREFIX/...
           # -t,  --tries=NUMBER            set number of retries to NUMBER (0 unlimits).
@@ -57,14 +85,10 @@ module SecStatementParser
           # -c,  --continue                resume getting a partially-downloaded file.
           # -q,  --quiet                   quiet (no output).
           print "Downloading #{url.split('/')[-1]} ..."
-          puts "done".green if system("wget #{url} -P #{download_folder} -t 3 -q") == true
+          puts "done".green if system("wget #{url} -P #{download_dir} -t 3 -q") == true
         end
       end
 
-    end
-
-    def create_folder_if_path_not_exist(path)
-      FileUtils.mkdir_p(path) unless File.directory? path
     end
 
     def validate_symbol(symbol)

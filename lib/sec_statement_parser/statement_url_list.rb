@@ -13,9 +13,9 @@ module SecStatementParser
     EARLIEST_YEAR_OF_XBRL = 2010
 
     def self.get(symbol, start_year: StatementUrlList::EARLIEST_YEAR_OF_XBRL, end_year: Date.today.strftime("%Y").to_i)
-      puts_and_raise "start_year > end_year" if start_year > end_year
-      puts_and_raise "invalid start_year" unless year_range_is_valid(start_year)
-      puts_and_raise "invalid end_year" unless year_range_is_valid(end_year)
+      raise "start_year > end_year" if start_year > end_year
+      raise "invalid start_year" unless year_range_is_valid(start_year)
+      raise "invalid end_year" unless year_range_is_valid(end_year)
 
       list = {}
       list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT)
@@ -50,7 +50,7 @@ module SecStatementParser
         puts "Obtaining #{symbol.upcase}'s #{type} URL list"
         doc = Nokogiri::HTML(open(query_url))
       rescue
-        puts_and_raise "Cannot obtain #{symbol.upcase}'s #{type}"
+        raise "Cannot obtain #{symbol.upcase}'s #{type}"
       end
 
       # Check whether symbol is correct or not by analyzing return html

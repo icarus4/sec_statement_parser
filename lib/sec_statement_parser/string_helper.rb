@@ -25,4 +25,8 @@ class String
   def alpha?
     !!match(/^[[:alpha:]]+$/)
   end
+
+  def equal_ignore_case?(str)
+    self.casecmp(str).zero?
+  end
 end
