@@ -16,8 +16,41 @@ module SecStatementParser
 
     def parse_statement
       @xml.remove_namespaces!
-      parse_statement_basic_info
-      # todo: parse other fields
+      results = parse_statement_basic_info
+      @context_refs = parse_context_refs(results[:period_end_date])
+    end
+
+    def parse_context_refs(end_date)
+      context_refs = {}
+
+      nodes = @xml.xpath('//context')
+      nodes.remove_subnode_if_contains_element!('segment')
+      nodes.remove_subnode_if_not_contains_element!('startDate')
+      nodes.remove_subnode_if_not_contains_element!('endDate')
+
+      nodes.each do |node|
+        hash = {}
+        context_id = node.xpath('.//@id').first.value
+        _start_date = node.xpath('.//startDate').text
+        _end_date = node.xpath('.//endDate').text
+        # Parse end date equals DocumentPeriodEndDate only
+        next if _end_date != end_date
+
+        hash[:start_date] = _start_date
+        hash[:end_date] = _end_date
+        hash[:period] = (Date.parse(_end_date) - Date.parse(_start_date)).to_i
+
+        # Skip period > 1 year
+        next if hash[:period] > 400 # FIXME: what is the max days in a year?
+        # Skip if period < 1 quarter
+        next if hash[:period] < 88 # FIXME: what is the min days in a quarter?
+
+        context_refs[context_id] = hash
+      end
+
+      raise "Cannot find context refs" if context_refs.length == 0
+
+      return context_refs
     end
 
     def parse_statement_basic_info
