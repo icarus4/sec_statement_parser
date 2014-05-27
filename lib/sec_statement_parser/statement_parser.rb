@@ -9,7 +9,7 @@ module SecStatementParser
 
     def parse(input)
       @xml = open_xml(input)
-      parse_statement
+      @statement = parse_statement
     end
 
     private
@@ -24,11 +24,33 @@ module SecStatementParser
       results = {}
       SecStatementFields::STATEMENT_BASIC_INFO_FIELDS.each do |field, rule|
         results[field] = get_one_text_by_element(rule[:keywords][0])
-        raise_error_if_nil_but_should_presence(rule[:should_presence], results[field], field)
+        raise_error_if_nil_and_should_presence(rule[:should_presence], results[field], field)
       end
 
+      results = fill_in_nil_fields_by_guess(results)
+      ap results
+    end
+
+    # Guess nil fields by known fields
+    def fill_in_nil_fields_by_guess(results)
+      # Fiscal year
+      # FIXME: year of period_end_date may not be exactly the same with fiscal_year
       if results[:fiscal_year].nil?
+        results[:fiscal_year] = SecDate.new(results[:period_end_date]).year
       end
+
+      # Fiscal period
+      if results[:fiscal_period].nil?
+        if results[:document_type] == '10-K'
+          results[:fiscal_period] = 'FY'
+        elsif results[:document_type] == '10-Q'
+          # TODO: currently we are not sure how to decide fiscal period precisely...
+        else
+          raise "Wrong document type: #{results[:document_type]}"
+        end
+      end
+
+      return results
     end
 
     def get_one_text_by_element(keyword)
@@ -45,7 +67,7 @@ module SecStatementParser
       end
     end
 
-    def raise_error_if_nil_but_should_presence(should_presence, value, field)
+    def raise_error_if_nil_and_should_presence(should_presence, value, field)
       if should_presence && value.nil?
         raise "#{field} should presence"
       end

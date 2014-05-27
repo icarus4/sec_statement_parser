@@ -20,6 +20,10 @@ module SecStatementParser
 
     def parse_local(symbol=@symbol)
       @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
+      parse_local_statements(@symbol)
+    end
+
+    def parse_local_all
       parse_local_statements
     end
 
@@ -33,8 +37,8 @@ module SecStatementParser
     MAX_SYMBOL_LENGTH = 8
     STATEMENT_DOWNLOAD_DIR = "#{Dir.home}/.sec_statement_parser/statements"
 
-    def parse_local_statements
-      statement_dir = "#{STATEMENT_DOWNLOAD_DIR}/#{@symbol}"
+    def parse_local_statements(symbol=nil)
+      statement_dir = "#{STATEMENT_DOWNLOAD_DIR}/#{symbol}"
 
       if dir_exist?(statement_dir)
         parse_file_recursively(statement_dir)
@@ -51,10 +55,10 @@ module SecStatementParser
 
     def parse_file_recursively(statement_dir)
       list_absolute_filepath_recursively(statement_dir).each do |filepath|
-        file = File.open(filepath, 'r')
-        puts "Parsing #{filepath}".green
-        @statements << @parser.parse(file)
-        file.close
+        File.open(filepath, 'r') do |file|
+          puts "Parsing #{filepath}".green
+          @statements << @parser.parse(file)
+        end
       end
     end
 
