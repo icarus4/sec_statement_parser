@@ -28,7 +28,6 @@ module SecStatementParser
       end
 
       results = fill_in_nil_fields_by_guess(results)
-      ap results
     end
 
     # Guess nil fields by known fields
@@ -36,7 +35,7 @@ module SecStatementParser
       # Fiscal year
       # FIXME: year of period_end_date may not be exactly the same with fiscal_year
       if results[:fiscal_year].nil?
-        results[:fiscal_year] = SecDate.new(results[:period_end_date]).year
+        results[:fiscal_year] = Date.parse(results[:period_end_date]).year
       end
 
       # Fiscal period
