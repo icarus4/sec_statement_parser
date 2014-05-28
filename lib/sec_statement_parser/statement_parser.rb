@@ -24,14 +24,24 @@ module SecStatementParser
 
     def parse_statement
       @xml.remove_namespaces!
-      results = {}
-      results = parse_statement_basic_info
-      context_refs_hash = parse_context_refs(results[:period_end_date])
-      results = parse_statement_fields(results, context_refs_hash)
-      ap results
+      @results = {}
+      init_results_hash
+      parse_statement_basic_info
+      context_refs_hash = parse_context_refs(@results[:period_end_date])
+      parse_statement_fields(context_refs_hash)
+      ap @results
     end
 
-    def parse_statement_fields(results, context_refs_hash)
+    def init_results_hash
+      @results[:fields_by_guess] = []
+      @results[:should_check] = false
+    end
+
+    def add_to_guess_fields(symbol)
+      @results[:fields_by_guess] << symbol
+    end
+
+    def parse_statement_fields(context_refs_hash)
       # for each field
       SecStatementFields::STATEMENT_FIELDS.each do |field, rules|
         # for each contextRef
@@ -53,8 +63,8 @@ module SecStatementParser
             raise "Find #{node.length} results by \"#{keyword}\", expect 1 result" if node.length > 1
 
             # generate field name
-            field_name = generate_field_symbol(field, context_ref_string, dates, results[:fiscal_period])
-            results[field_name.to_sym] = node.first.text.to_f_or_i
+            field_name = generate_field_symbol(field, context_ref_string, dates, @results[:fiscal_period])
+            @results[field_name.to_sym] = node.first.text.to_f_or_i
             match_count_for_current_keywords += 1
           end # rules[:keywords].each do |keyword|
 
@@ -63,9 +73,7 @@ module SecStatementParser
 
         end # context_refs.each do |context_ref, dates|
       end # SecStatementFields::STATEMENT_FIELDS.each do |field, rules|
-
-      return results
-    end
+    end # def parse_statement_fields(context_refs_hash)
 
 
     # CAUTIONS:
@@ -147,49 +155,47 @@ module SecStatementParser
     end
 
     def parse_statement_basic_info
-      results = {}
       SecStatementFields::STATEMENT_BASIC_INFO_FIELDS.each do |field, rule|
-        results[field] = get_one_text_by_element(rule[:keywords][0])
-        raise_error_if_nil_and_should_presence(rule[:should_presence], results[field], field)
+        @results[field] = get_one_text_by_element(rule[:keywords][0])
+        raise_error_if_nil_and_should_presence(rule[:should_presence], @results[field], field)
       end
 
-      results = fill_in_nil_fields_by_guess(results)
+      fill_in_nil_fields_by_guess
     end
 
     # Guess nil fields by known fields
-    def fill_in_nil_fields_by_guess(results)
+    def fill_in_nil_fields_by_guess
       # Fiscal year
       # FIXME: year of period_end_date may not be exactly the same with fiscal_year
-      if results[:fiscal_year].nil?
-        results[:fiscal_year] = Date.parse(results[:period_end_date]).year.to_s
+      if @results[:fiscal_year].nil?
+        @results[:fiscal_year] = Date.parse(@results[:period_end_date]).year.to_s
+        add_to_guess_fields(:fiscal_year)
       end
 
       # Fiscal period
-      if results[:fiscal_period].nil?
-        if results[:document_type] == '10-K'
-          results[:fiscal_period] = 'FY'
-        elsif results[:document_type] == '10-Q'
+      if @results[:fiscal_period].nil?
+        if @results[:document_type] == '10-K'
+          @results[:fiscal_period] = 'FY'
+        elsif @results[:document_type] == '10-Q'
 
-          date = Date.parse(results[:period_end_date])
+          date = Date.parse(@results[:period_end_date])
 
           if date.month == 3 && date.day == 31
-            results[:fiscal_period] = 'Q1'
+            @results[:fiscal_period] = 'Q1'
           elsif date.month == 6 && date.day == 30
-            results[:fiscal_period] = 'Q2'
+            @results[:fiscal_period] = 'Q2'
           elsif date.month == 9 && date.day == 30
-            results[:fiscal_period] = 'Q3'
+            @results[:fiscal_period] = 'Q3'
           elsif date.month == 12 && date.day == 31
-            results[:fiscal_period] = 'Q4'
+            @results[:fiscal_period] = 'Q4'
           else
             # TODO...
           end
-
         else
-          raise "Wrong document type: #{results[:document_type]}"
+          raise "Wrong document type: #{@results[:document_type]}"
         end
+        add_to_guess_fields(:fiscal_period)
       end
-
-      return results
     end
 
     def get_one_text_by_element(keyword)
