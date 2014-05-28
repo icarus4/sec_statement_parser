@@ -5,7 +5,7 @@ module SecStatementParser
   class Statement
     include Utilities
 
-    attr_reader :symbol, :result
+    attr_reader :symbol, :result, :url_list, :statements
 
     def initialize(symbol)
       @symbol = validate_symbol symbol
@@ -27,6 +27,23 @@ module SecStatementParser
       parse_local_statements
     end
 
+    def get_list(symbol=@symbol)
+      @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
+      @url_list = _get_list
+    end
+
+    def parse_url_list
+      raise "#get_list before #parse_url_list" if @url_list.nil?
+
+      @url_list.values.each do |urls|
+        urls.each do |url|
+          @statements << @parser.parse(url)
+        end
+      end
+
+    end
+
+    # TODO
     def parse_with_download(symbol=@symbol)
       @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
       # TODO:
@@ -63,7 +80,7 @@ module SecStatementParser
       end
     end
 
-    def get_list
+    def _get_list
       StatementUrlList::get @symbol
     end
 
@@ -72,7 +89,7 @@ module SecStatementParser
       annual_report_path = "#{base_path}/10-K"
       quarterly_report_path = "#{base_path}/10-Q"
 
-      @url_list = get_list
+      @url_list = _get_list
 
       # Create dirs to save statements
       create_dir_if_path_not_exist(annual_report_path)

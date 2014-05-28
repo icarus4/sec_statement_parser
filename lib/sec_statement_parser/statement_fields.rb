@@ -5,16 +5,16 @@ module SecStatementParser
   module SecStatementFields
 
     STATEMENT_BASIC_INFO_FIELDS = {
-      document_type:              { keywords: ['DocumentType'], should_presence: true },
-      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: false },   # This should be parsed first
-      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: false }, # FY/Q1/Q2/Q3/Q4
-      curr_fiscal_year_end_date:  { keywords: ['CurrentFiscalYearEndDate'], should_presence: false },
-      amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true },             # usually be false, need to check when to be true
-      registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true },
-      period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true },
-      cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true },
-      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false },
-      category:                   { keywords: ['EntityFilerCategory'], should_presence: true }
+      document_type:              { keywords: ['DocumentType'], should_presence: true, type: String },
+      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: false, type: Integer },   # This should be parsed first
+      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: false, type: String }, # FY/Q1/Q2/Q3/Q4
+      curr_fiscal_year_end_date:  { keywords: ['CurrentFiscalYearEndDate'], should_presence: false, type: String },
+      amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true, type: TrueClass },  # usually be false, need to check when to be true
+      registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true, type: String},
+      period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true, type: String },
+      cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true, type: String },
+      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false, type: String },
+      category:                   { keywords: ['EntityFilerCategory'], should_presence: true, type: String }
     }
 
     # FD2013Q4YTD / D2013Q3 / FD2013Q2QTD / ...
@@ -25,14 +25,15 @@ module SecStatementParser
       # 營收
       revenue:                    { keywords: ['Revenues',
                                                'SalesRevenueNet',
-                                               'SalesRevenueServicesNet'],
+                                               'SalesRevenueServicesNet',
+                                               'SalesRevenueGoodsNet'], # FSLR
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 毛利
       gross_profit:               { keywords: ['GrossProfit'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 營業利益
-      operating_income:           { keywords: ['OperatingIncomeLoss',
-                                               'OperatingExpenses'], # HD
+      operating_income:           { keywords: ['OperatingIncomeLoss'],
+                                               # 'OperatingExpenses'], # HD
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 稅前淨利
       net_income_beforoe_tax:     { keywords: ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
@@ -54,10 +55,12 @@ module SecStatementParser
                                                'CostsAndExpenses'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # EPS
-      eps_basic:                  { keywords: ['EarningsPerShareBasic'],
+      eps_basic:                  { keywords: ['EarningsPerShareBasic',
+                                               'IncomeLossFromContinuingOperationsPerBasicAndDilutedShare'], # TSLA tsla-20111231.xml
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # EPS diluted
-      eps_diluted:                { keywords: ['EarningsPerShareDiluted'],
+      eps_diluted:                { keywords: ['EarningsPerShareDiluted',
+                                               'IncomeLossFromContinuingOperationsPerBasicAndDilutedShare'], # TSLA tsla-20111231.xml
                                     regex_str: REGEX_STR_TYPE1, should_presence: true }
     }
 

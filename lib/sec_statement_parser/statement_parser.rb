@@ -5,14 +5,11 @@ module SecStatementParser
   class StatementParser
 
     def initialize
-      @statement = Hash.new
     end
 
     def parse(input)
       @xml = open_xml(input)
-      # Clear before parsing
-      @statement.clear unless @statement.nil?
-      @statement = parse_statement
+      return parse_statement
     end
 
     private
@@ -29,7 +26,7 @@ module SecStatementParser
       parse_statement_basic_info
       context_refs_hash = parse_context_refs(@results[:period_end_date])
       parse_statement_fields(context_refs_hash)
-      ap @results
+      return @results
     end
 
     def init_results_hash
@@ -107,7 +104,7 @@ module SecStatementParser
           if rules[:should_presence]
             raise "No result found for #{field} with contextRef set: #{context_refs_hash}"
           else
-            @results[field_name.to_sym] = nil
+            @results[field] = nil
           end
         end
       end # SecStatementFields::STATEMENT_FIELDS.each do |field, rules|
@@ -148,7 +145,7 @@ module SecStatementParser
         end
 
         if context_ref_string !~ /^eol_/
-          puts "Unknow contextRef type: #{context_ref_string}".check_value_color
+          puts "Unknow contextRef type: #{context_ref_string}".light_cyan
         end
       end
 
@@ -258,6 +255,7 @@ module SecStatementParser
     # Return Nokogiri::XML object
     def open_xml(input)
       if input.is_a? String
+        puts "opening #{input}"
         return open_xml_link(input)
       elsif input.is_a? File
         return open_xml_file(input)
