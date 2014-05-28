@@ -29,6 +29,7 @@ module SecStatementParser
 
     def parse_with_download(symbol=@symbol)
       @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
+      # TODO:
     end
 
 

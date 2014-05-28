@@ -10,6 +10,16 @@ class String
     Float(self) != nil rescue false
   end
 
+  def to_f_or_i
+    if self.integer?
+      return self.to_i
+    elsif self.float?
+      return self.to_f
+    else
+      raise "#{self} is not a Integer or Float"
+    end
+  end
+
   def warning_color
     self.black.on_yellow
   end
