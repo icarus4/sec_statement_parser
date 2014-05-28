@@ -17,9 +17,9 @@ module SecStatementParser
 
     private
 
-    MAX_DAYS_IN_A_YEAR = 366
-    MIN_DAYS_IN_A_YEAR = 365
-    MAX_DAYS_IN_A_QUARTER = 93
+    MAX_DAYS_IN_A_YEAR = 370
+    MIN_DAYS_IN_A_YEAR = 360
+    MAX_DAYS_IN_A_QUARTER = 101 # should be 93, but set to 101 for goog-20120930.xml
     MIN_DAYS_IN_A_QUARTER = 88
 
     def parse_statement
@@ -33,12 +33,18 @@ module SecStatementParser
     end
 
     def init_results_hash
-      @results[:fields_by_guess] = []
-      @results[:should_check] = false
+      @results[:parse_info_for_debug] = {}
+      @results[:parse_info_for_debug][:fields_by_guess] = []
+      @results[:parse_info_for_debug][:fields_with_multi_results] = []
+      @results[:parse_info_for_debug][:should_check] = false
     end
 
     def add_to_guess_fields(symbol)
-      @results[:fields_by_guess] << symbol
+      @results[:parse_info_for_debug][:fields_by_guess] << symbol
+    end
+
+    def add_to_multi_results_fields(symbol)
+      @results[:parse_info_for_debug][:fields_with_multi_results] << symbol
     end
 
     def parse_statement_fields(context_refs_hash)
@@ -48,6 +54,10 @@ module SecStatementParser
         context_refs_hash.each do |context_ref_string, dates|
 
           match_count_for_current_keywords = 0
+          found_values = []
+
+          # generate field name
+          field_name = generate_field_symbol(field, context_ref_string, dates, @results[:fiscal_period])
 
           # for each keyword
           rules[:keywords].each do |keyword|
@@ -62,14 +72,20 @@ module SecStatementParser
             # one keyword should find only one result
             raise "Find #{node.length} results by \"#{keyword}\", expect 1 result" if node.length > 1
 
-            # generate field name
-            field_name = generate_field_symbol(field, context_ref_string, dates, @results[:fiscal_period])
-            @results[field_name.to_sym] = node.first.text.to_f_or_i
+            found_values << node.first.text.to_f_or_i
             match_count_for_current_keywords += 1
           end # rules[:keywords].each do |keyword|
 
-          raise "No result found for #{field}, please check\n\t#{context_refs_hash}\n\tcontext_ref_string:#{context_ref_string}" if match_count_for_current_keywords == 0 && rules[:should_presence]
-          puts "Find #{match_count_for_current_keywords} results for #{field}, please check".check_value_color if match_count_for_current_keywords > 1
+          if match_count_for_current_keywords == 0 && rules[:should_presence]
+            raise "No result found for #{field}, please check\n\t#{context_refs_hash}\n\tcontext_ref_string:#{context_ref_string}"
+          end
+
+          if match_count_for_current_keywords > 1
+            puts "Find #{match_count_for_current_keywords} results for #{field}, please check".check_value_color
+            add_to_multi_results_fields(field)
+          end
+
+          @results[field_name.to_sym] = found_values.first
 
         end # context_refs.each do |context_ref, dates|
       end # SecStatementFields::STATEMENT_FIELDS.each do |field, rules|
@@ -103,12 +119,7 @@ module SecStatementParser
 
         case dates[:period]
         when MIN_DAYS_IN_A_QUARTER..MAX_DAYS_IN_A_QUARTER
-          if fiscal_period.nil?
-            tmp = "#{field.to_s}_this_quarter"
-          else
-            raise "Error fiscal period is not valid: #{fiscal_period}" if fiscal_period !~ /^Q[1-4]{1}$/
-            tmp = "#{field.to_s}_#{fiscal_period.downcase}"
-          end
+          tmp = "#{field.to_s}_this_quarter"
         when MIN_DAYS_IN_A_YEAR..MAX_DAYS_IN_A_YEAR
           tmp = "#{field.to_s}_fy"
         else
@@ -149,7 +160,10 @@ module SecStatementParser
         context_refs[context_id] = hash
       end
 
-      raise "Cannot find context refs" if context_refs.length == 0
+      if context_refs.length == 0
+        ap nodes
+        raise "Cannot find context refs"
+      end
 
       return context_refs
     end
