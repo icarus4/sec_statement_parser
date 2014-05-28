@@ -36,6 +36,7 @@ module SecStatementParser
       @results[:parse_info_for_debug] = {}
       @results[:parse_info_for_debug][:fields_by_guess] = []
       @results[:parse_info_for_debug][:fields_with_multi_results] = []
+      @results[:parse_info_for_debug][:fields_with_zero_result] = []
       @results[:parse_info_for_debug][:should_check] = false
     end
 
@@ -47,13 +48,20 @@ module SecStatementParser
       @results[:parse_info_for_debug][:fields_with_multi_results] << symbol
     end
 
+    def add_to_zero_result_fields(symbol)
+      @results[:parse_info_for_debug][:fields_with_zero_result] << symbol
+    end
+
     def parse_statement_fields(context_refs_hash)
       # for each field
       SecStatementFields::STATEMENT_FIELDS.each do |field, rules|
+
+        match_count_for_current_context_ref_set = 0
+
         # for each contextRef
         context_refs_hash.each do |context_ref_string, dates|
 
-          match_count_for_current_keywords = 0
+          match_count_for_current_keyword_set = 0
           found_values = []
 
           # generate field name
@@ -73,21 +81,35 @@ module SecStatementParser
             raise "Find #{node.length} results by \"#{keyword}\", expect 1 result" if node.length > 1
 
             found_values << node.first.text.to_f_or_i
-            match_count_for_current_keywords += 1
+            match_count_for_current_keyword_set += 1
+            match_count_for_current_context_ref_set += 1
           end # rules[:keywords].each do |keyword|
 
-          if match_count_for_current_keywords == 0 && rules[:should_presence]
-            raise "No result found for #{field}, please check\n\t#{context_refs_hash}\n\tcontext_ref_string:#{context_ref_string}"
+          if match_count_for_current_keyword_set == 0
+            puts "No result found for #{field}, please check".check_value_color
+            puts "#{context_refs_hash}".check_value_color
+            puts "context_ref_string:#{context_ref_string}".check_value_color
+            puts ""
+            next
           end
 
-          if match_count_for_current_keywords > 1
-            puts "Find #{match_count_for_current_keywords} results for #{field}, please check".check_value_color
+          if match_count_for_current_keyword_set > 1
+            puts "Find #{match_count_for_current_keyword_set} results for #{field}, please check".check_value_color
             add_to_multi_results_fields(field)
           end
 
           @results[field_name.to_sym] = found_values.first
 
-        end # context_refs.each do |context_ref, dates|
+        end # context_refs.each do |context_ref_string, dates|
+
+        if match_count_for_current_context_ref_set == 0
+          add_to_zero_result_fields(field)
+          if rules[:should_presence]
+            raise "No result found for #{field} with contextRef set: #{context_refs_hash}"
+          else
+            @results[field_name.to_sym] = nil
+          end
+        end
       end # SecStatementFields::STATEMENT_FIELDS.each do |field, rules|
     end # def parse_statement_fields(context_refs_hash)
 
@@ -115,8 +137,7 @@ module SecStatementParser
 
         raise "Error output string: #{tmp}" if tmp !~ /_q[1-4]$/ && tmp !~ /_q[2-4]ytd$/ && tmp !~ /_fy$/
 
-      elsif context_ref_string =~ /^eol_/
-
+      else
         case dates[:period]
         when MIN_DAYS_IN_A_QUARTER..MAX_DAYS_IN_A_QUARTER
           tmp = "#{field.to_s}_this_quarter"
@@ -125,8 +146,10 @@ module SecStatementParser
         else
           raise "period not matched: #{dates[:period]}"
         end
-      else
-        raise "Unknow contextRef type: #{context_ref}"
+
+        if context_ref_string !~ /^eol_/
+          puts "Unknow contextRef type: #{context_ref_string}".check_value_color
+        end
       end
 
       return tmp
@@ -217,7 +240,7 @@ module SecStatementParser
 
       case node.length
       when 0
-        puts "No result found by keyword \"#{keyword}\"".warning_color
+        puts "No result found by keyword \"#{keyword}\"".check_value_color
         return nil
       when 1
         return node.text
