@@ -7,9 +7,10 @@ module SecStatementParser
 
     attr_reader :symbol, :result, :url_list, :statements
 
-    def initialize(symbol)
+    def initialize(symbol, debug=false)
       @symbol = validate_symbol symbol
-      @parser = StatementParser.new
+      @debug = !!debug
+      @parser = StatementParser.new(@debug)
       @statements = []
     end
 
@@ -41,12 +42,14 @@ module SecStatementParser
         end
       end
 
+      return @statements
     end
 
     # TODO
     def parse_with_download(symbol=@symbol)
       @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
       # TODO:
+      raise "Not implement yet"
     end
 
 
@@ -114,9 +117,9 @@ module SecStatementParser
     end
 
     def validate_symbol(symbol)
-      raise "Error symbol type" unless symbol.is_a?(String)
-      raise "Error symbol format" unless symbol.alpha?
-      raise "Invalid symbol length" unless valid_symbol_length? symbol
+      raise "Error symbol type: #{symbol.class}" unless symbol.is_a?(String)
+      raise "Error symbol format. symbol: #{symbol}" unless symbol.alpha?
+      raise "Invalid symbol length. symbol: #{symbol}" unless valid_symbol_length? symbol
       symbol.upcase
     end
 

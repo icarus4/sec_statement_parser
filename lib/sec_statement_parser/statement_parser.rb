@@ -4,7 +4,8 @@ module SecStatementParser
 
   class StatementParser
 
-    def initialize
+    def initialize(debug=false)
+      @debug = !!debug
     end
 
     def parse(input)

@@ -56,14 +56,16 @@ File.open(SYMBOL_FILE, 'r') do |f|
     next if !skip_parsed && result_json_hash.has_key?(symbol)
     next if symbol[0] == 'A'
 
+    tries = 0
     begin
       puts "Prepare to parse #{symbol} @ #{Time.now}"
       s = SecStatementParser::Statement.new symbol
       s.get_list
     rescue
+      tries += 1
       symbol.append_to_file(OUTPUT_GET_LIST_FAIL_FILE) unless get_list_fail_array.include?(symbol)
       get_list_fail_array << symbol
-      next
+      next if tries > 10
     end
 
     begin
