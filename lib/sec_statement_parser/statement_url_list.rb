@@ -13,20 +13,21 @@ module SecStatementParser
     EARLIEST_YEAR_OF_XBRL = 2010
 
     def self.get(symbol, start_year: StatementUrlList::EARLIEST_YEAR_OF_XBRL, end_year: Date.today.strftime("%Y").to_i)
-      return nil if start_year > end_year
-      return nil unless year_range_is_valid(start_year)
-      return nil unless year_range_is_valid(end_year)
+      raise "start_year > end_year" if start_year > end_year
+      raise "invalid start_year" unless year_range_is_valid(start_year)
+      raise "invalid end_year" unless year_range_is_valid(end_year)
 
       list = {}
-      return nil if (list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT)) == nil
+      list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT)
+      list_10Q = _get_list_of_xbrl_url(symbol, QUARTERLY_REPORT)
+
+      return nil if list_10Q == nil and list_10K == nil
 
       list[:annual_report] = list_10K
-
-      # Todo: get 10-Q
+      list[:quarterly_report] = list_10Q
 
       return list
     end
-
 
     private
 
@@ -38,10 +39,9 @@ module SecStatementParser
       type = type.upcase
 
       # Validate input
-      # Todo: handle quarterly report
+      # TODO: handle quarterly report
       if type != ANNUAL_REPORT && type != QUARTERLY_REPORT
-        puts "Support #{ANNUAL_REPORT} only"
-        return nil
+        raise "Error statement type. Support #{ANNUAL_REPORT} and #{QUARTERLY_REPORT} only"
       end
 
       # Get html
@@ -50,14 +50,13 @@ module SecStatementParser
         puts "Obtaining #{symbol.upcase}'s #{type} URL list"
         doc = Nokogiri::HTML(open(query_url))
       rescue
-        puts "Cannot obtain #{symbol.upcase}'s #{type}"
-        return nil
+        raise "Cannot obtain #{symbol.upcase}'s #{type}"
       end
 
       # Check whether symbol is correct or not by analyzing return html
       if doc.css("#seriesDiv").empty?
         puts "Wrong stock symbol: \"#{symbol}\"".light_red.on_light_white
-        return nil
+        raise "Wrong stock symbol"
       end
 
       # A financial statement contains "Interactive Data" implies it has XBRL format, and that's what we need.
@@ -74,7 +73,7 @@ module SecStatementParser
         return nil
       end
 
-      # Todo: handle exception when entries > ENTRIES_PER_PAGE (100)
+      # TODO: handle exception when entries > ENTRIES_PER_PAGE (100)
       raise ParseError, 'Match data' if match_counter >= ENTRIES_PER_PAGE
 
       target_td_nodes.each do |node|
@@ -148,7 +147,7 @@ module SecStatementParser
 
     def self._get_year_from_linkname(link)
 
-      # Todo: error handle
+      # TODO: error handle
 
       # ex: http://www.sec.gov/Archives/edgar/data/1403161/000140316113000011/v-20130930.xml => return 2013
       return link.split('-')[1][0..3].to_i

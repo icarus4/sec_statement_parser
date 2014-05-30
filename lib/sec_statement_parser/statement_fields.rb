@@ -4,33 +4,90 @@ module SecStatementParser
 
   module SecStatementFields
 
-    @@fields = {
-      document_type:              { keywords: ['dei:DocumentType'], mode: :single, should_presence: true },
-      fiscal_year:                { keywords: ['dei:DocumentFiscalYearFocus'], mode: :single, should_presence: true },   # This should be parsed first
-      fiscal_period:              { keywords: ['dei:DocumentFiscalPeriodFocus'], mode: :single, should_presence: true }, # FY/Q1/Q2/Q3/Q4
-      amendment_flag:             { keywords: ['dei:AmendmentFlag'], mode: :single, should_presence: true },             # usually be false, need to check when to be true
-      registrant_name:            { keywords: ['dei:EntityRegistrantName'], mode: :single, should_presence: true },
-      period_end_date:            { keywords: ['dei:DocumentPeriodEndDate'], mode: :single, should_presence: true },
-      cik:                        { keywords: ['dei:EntityCentralIndexKey'], mode: :single, should_presence: true },
-      trading_symbol:             { keywords: ['dei:TradingSymbol'], mode: :single, should_presence: false }
-
-      # revenue:                    { keywords: ['us-gaap:Revenues',
-      #                                          'us-gaap:SalesRevenueNet',
-      #                                          'us-gaap:SalesRevenueServicesNet'] },
-      # #cost_of_revenue:          { keywords: ['us-gaap:CostOfRevenue'] },
-      # #operating_income:           { keywords: ['us-gaap:OperatingIncomeLoss'] }, # operating profit
-      # net_income:                 { keywords: ['us-gaap:NetIncomeLoss'] },
-      # eps_basic:                  { keywords: ['us-gaap:EarningsPerShareBasic'] },
-      # eps_diluted:                { keywords: ['us-gaap:EarningsPerShareDiluted'] }
+    STATEMENT_BASIC_INFO_FIELDS = {
+      document_type:              { keywords: ['DocumentType'], should_presence: true, type: String },
+      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: false, type: Integer },   # This should be parsed first
+      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: false, type: String }, # FY/Q1/Q2/Q3/Q4
+      curr_fiscal_year_end_date:  { keywords: ['CurrentFiscalYearEndDate'], should_presence: false, type: String },
+      amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true, type: TrueClass },  # usually be false, need to check when to be true
+      registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true, type: String},
+      period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true, type: String },
+      cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true, type: String },
+      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false, type: String },
+      category:                   { keywords: ['EntityFilerCategory'], should_presence: true, type: String }
     }
+
+    # FD2013Q4YTD / D2013Q3 / FD2013Q2QTD / ...
+    REGEX_STR_TYPE1 = '^[FD]+[0-9]{4}Q[1-4][QYTD]{0,3}'
+
+    STATEMENT_FIELDS = {
+
+      # 營收
+      revenue:                    { keywords: ['Revenues',
+                                               'SalesRevenueNet',
+                                               'SalesRevenueServicesNet',
+                                               'SalesRevenueGoodsNet'], # FSLR
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
+      # 毛利
+      gross_profit:               { keywords: ['GrossProfit'],
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
+      # 營業利益
+      operating_income:           { keywords: ['OperatingIncomeLoss'],
+                                               # 'OperatingExpenses'], # HD
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
+      # 稅前淨利
+      net_income_beforoe_tax:     { keywords: ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+                                               'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', # HD
+                                               'IncomeLossFromContinuingOperationsBeforeIncomeTaxesAndMinorityInterest', # V
+                                               'IncomeLossFromContinuingOperationsBeforeEquityMethodInvestmentsIncomeTaxesExtraordinaryItems'], # PCLN
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
+      # 稅後淨利
+      net_income_after_tax:       { keywords: ['NetIncomeLoss',
+                                               'ProfitLoss'], # V
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
+      # 營業成本 / 銷貨成本
+      cost_of_revenue:            { keywords: ['CostOfRevenue',
+                                               'CostOfGoodsSold', # NKE
+                                               'CostOfGoodsAndServicesSold'], # PCLN
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
+      # 總營業支出 (總營業支出 + 營業利益 = 營收) (operating_expense + operating_income = revenue)
+      total_operating_expense:    { keywords: ['OperatingExpenses', # HD
+                                               'CostsAndExpenses'],
+                                    regex_str: REGEX_STR_TYPE1, should_presence: false },
+      # EPS
+      eps_basic:                  { keywords: ['EarningsPerShareBasic',
+                                               'IncomeLossFromContinuingOperationsPerBasicAndDilutedShare'], # TSLA tsla-20111231.xml
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true },
+      # EPS diluted
+      eps_diluted:                { keywords: ['EarningsPerShareDiluted',
+                                               'IncomeLossFromContinuingOperationsPerBasicAndDilutedShare'], # TSLA tsla-20111231.xml
+                                    regex_str: REGEX_STR_TYPE1, should_presence: true }
+    }
+
 
     def self.parse(input)
       statement = {}
 
       xml = _open_xml(input); return nil if xml.nil?
 
-      @@fields.each do |field, patterns|
+      # Remove all namespaces to simplify statement parsing
+      xml.remove_namespaces!
+
+      @@single_mapping_fields.each do |field, patterns|
         statement[field.to_sym] = _parse_field(xml, statement, patterns)
+      end
+
+      @@multi_mapping_fields.each do |field, patterns|
+        result = _parse_multiple_mapping_field(xml, statement, field, patterns)
+        if result.nil?
+          puts "0 result found, keywords: #{field}".warning_color
+          statement[field] = nil
+          next
+        end
+
+        result.each do |k,v|
+          statement[k] = v
+        end
       end
 
       return statement
@@ -40,18 +97,13 @@ module SecStatementParser
     private
 
     def self._parse_field(xml, statement, patterns)
-      # patterns is a hash like: { keywords: ['dei:DocumentFiscalYearFocus'], mode: :single, should_presence: true }
+      # patterns is a hash like: { keywords: ['DocumentFiscalYearFocus'], mode: :single, should_presence: true }
       keywords        = patterns[:keywords]
-      mode            = patterns[:mode]
       should_presence = patterns[:should_presence]
       result          = nil
 
-      case mode
-      when :single
-        result = _search_single_quantity(xml, keywords, should_presence)
-      else
-        result = _search_by_keywords(xml, statement, keywords)
-      end
+      result = _search_single_quantity(xml, keywords, should_presence)
+
       return result
     end
 
@@ -75,10 +127,10 @@ module SecStatementParser
 
       if result.length == 0
         if should_presence
-          puts "0 result found, please check\nkeywords: #{keywords}".red
-          raise "0 result found, please check\nkeywords: #{keywords}"
+          puts "0 result found, please check. keywords: #{keywords}".error_color
+          raise "0 result found, please check. keywords: #{keywords}"
         else
-          puts "0 result found.\nkeywords: #{keywords}".yellow
+          puts "0 result found. keywords: #{keywords}".warning_color
           return nil
         end
       end
@@ -86,110 +138,104 @@ module SecStatementParser
       # if multiple results found and they are identical, it should be valid.
       # result.uniq.length is check whether results are identical or not.
       if result.length > 1 && result.uniq.length > 1
-        puts "#{result.length} results found, please check\nkeywords: #{keywords}\nresult: #{result}".red
-        raise "#{result.length} results found, please check\nkeywords: #{keywords}\nresult: #{result}"
+        puts "#{result.length} results found, please check. keywords: #{keywords}\nresult: #{result}".error_color
+        raise "#{result.length} results found, please check. keywords: #{keywords}\nresult: #{result}"
       end
 
       return result[0].chomp
     end
 
-    def self._search_by_keywords(xml, statement, keywords)
-      result = []
-      fiscal_year = statement[:fiscal_year]
-      fiscal_period = statement[:fiscal_period]
+    def self._parse_multiple_mapping_field(xml, statement, field, patterns)
+      result = {}
+      should_presence = patterns[:should_presence]
 
-      keywords.each do |keyword|
-        if fiscal_year.nil?
-          nodes = xml.xpath("//#{keyword}")
-        else
-          case fiscal_period
-          when nil
-            period = nil
-          when 'FY'
-            period = 'Q4YTD'
-          else
-            period = "#{fiscal_period}QTD"
-          end
-          nodes = xml.xpath("//#{keyword}[contains(@contextRef, '#{fiscal_year}#{period}')]")
-        end
+      # For each keywords, search by contextRef with valid format.
+      # Valid contextRef format are as follows:
+      # FD2013Q1Y / D2013Q2QTD / D2013Q4YTD / ...
+      using_regex_set = 1
+      patterns[:keywords].each_with_index do |keyword, index|
+        nodes = xml.xpath("//#{keyword}")
+        next if nodes.nil?
 
-        # Failed case: cannot find any result by keyword
-        # In this case, we try to use next keyword
-        if nodes.length == 0
-          next
-        end
+        fiscal_year = statement[:fiscal_year]
+        nodes.each do |node|
 
-        # Success case: just find one result
-        if nodes.length == 1
-          result << nodes.text
-          next
-        end
-
-        # Not sure case: find multiple results
-        if nodes.length > 1
-          matched_count_in_nodes = 0
-          redo_for_class_search = false
-          nodes.each_with_index do |node, index|
-            # Filter out attribute value with '_' character
-            if redo_for_class_search == false
-              if !node.attr('contextRef').include? '_'
-                matched_count_in_nodes += 1
-                result << node.text
-              end
-            else # Redo if cannot find any matched result
-              if node.attr('contextRef').include? 'CommonClassAMember'
-                matched_count_in_nodes += 1
-                result << node.text
-              end
-            end
-
-            # Redo if cannot find any matched result
-            if index == nodes.length - 1 && matched_count_in_nodes == 0 && redo_for_class_search == false
-              redo_for_class_search = true
-              redo
-            end
-          end
-
-          case matched_count_in_nodes
-          when 0
-            puts "#{matched_count_in_nodes} matched result by using #{keywords}".yellow
-            next
+          contextRef = node.attr('contextRef')
+          case using_regex_set
+          # 1st regex set
           when 1
-            next
-          else
-            puts "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit.".red
-            raise "#{matched_count_in_nodes} matched results by using #{keywords}, please check. Exit."
+            case contextRef
+            when /^[FD]+#{fiscal_year}Q1YTD$/ # ex: FD2013Q1YTD => xxx_q1
+              eval "result[:#{field}_q1] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[2-3]YTD$/ # ex: FD2013Q2YTD => xxx_q2ytd
+              eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q4YTD$/ # ex: FD2013Q4YTD => xxx_fy
+             eval "result[:#{field}_fy] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]$/ # ex: FD2013Q1 => xxx_q1
+              eval "result[:#{field}_q#{contextRef[-1]}] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]QTD$/ # ex: FD2013Q2 => xxx_q2
+             eval "result[:#{field}_q#{contextRef[-4]}] = node.text.chomp"
+            end # case contextRef
+            # 2nd regex set
+          when 2
+            case contextRef
+            when /^[FD]+#{fiscal_year}Q1YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
+              eval "result[:#{field}_q1] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[2-3]YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
+              eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q4YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q4YTD
+              eval "result[:#{field}_fy] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1
+              eval "result[:#{field}_q#{contextRef[-62]}] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]QTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q2
+              eval "result[:#{field}_q#{contextRef[-65]}] = node.text.chomp"
+            end # case contextRef
           end
-        end # if nodes.length > 1
-      end # keywords.each do |keyword|
+        end # nodes.each do |node|
 
-      # Check results
-      case result.length
-      when 0
-        puts "0 result found by #{keywords}, please check.".red
-        raise "0 result found by #{keywords}, please check."
-      when 1
-        return result[0].chomp
-      else
-        if result.uniq.length == 1
-          return result[0].chomp
-        else
-          puts "#{result.length} results found by #{keywords}, please check".red
-          raise "#{result.length} results found by #{keywords}, please check"
+        break if result.any?
+
+        # Prepare to parse by next regex set
+        if index == patterns[:keywords].length - 1 && using_regex_set < 2
+          using_regex_set += 1
+          redo
         end
+
+      end # patterns[:keywords].each do |keyword, index|
+
+      # Return if there is any result found
+      if result.any?
+        puts "Parse #{field} with CommonClassAMember. You'd better check value.".check_value_color if using_regex_set == 2
+        return result
+      else
+        if should_presence
+          puts "no result found, please check. field: #{field}".error_color
+          raise "no result found, please check. field: #{field}"
+        end
+        return nil
       end
-    end
+    end # self._parse_multiple_mapping_field(xml, statement, field, patterns)
+
 
     def self._remove_node_if_attr_contains(nodes, target_attr, str)
-      _nodes = nodes.dup # FIXME: Here we have to use nodes.dup. But....why nodes.clone does not work???
-      _nodes.each do |node|
+      nodes.dup.each do |node|
         nodes.delete(node) if node.attr(target_attr).include? str
       end
       return nodes
     end
 
 
-    # Return Nokogiri::XML
+    def self._remove_node_if_attr_not_match_regex(nodes, target_attr, regex_str)
+      regex = Regexp.new regex_str
+
+      nodes.dup.each do |node|
+        nodes.delete(node) unless node.attr(target_attr) =~ regex
+      end
+
+      return nodes
+    end
+
+    # Return Nokogiri::XML object
     def self._open_xml(input)
       if input.is_a? String
         return _open_xml_link(input)

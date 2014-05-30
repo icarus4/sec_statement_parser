@@ -6,8 +6,8 @@ require 'sec_statement_parser/version'
 Gem::Specification.new do |spec|
   spec.name          = 'sec_statement_parser'
   spec.version       = SecStatementParser::VERSION
-  spec.date          = '2014-05-05'
-  spec.authors       = ['Stanley Chu']
+  spec.date          = '2014-05-30'
+  spec.authors       = ['Gary Chu']
   spec.email         = 'icarus4.chu@gmail.com'
   spec.description   = %q{A gem for parsing stock financial statement from SEC Edgar}
   spec.summary       = %q{A gem for parsing stock financial statement from SEC Edgar}
