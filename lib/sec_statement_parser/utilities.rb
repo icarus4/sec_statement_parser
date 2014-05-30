@@ -11,5 +11,17 @@ module SecStatementParser
       end
       return true
     end
+
+    def create_dir_if_path_not_exist(path)
+      FileUtils.mkdir_p(path) unless File.directory? path
+    end
+
+    def dir_exist?(path)
+      File.directory?(path)
+    end
+
+    def list_absolute_filepath_recursively(path)
+      Dir.glob("#{path}/**/*").reject{ |f| File.directory?(f) }
+    end
   end
 end

@@ -4,33 +4,36 @@ module SecStatementParser
 
   module SecStatementFields
 
-    @@single_mapping_fields = {
-      document_type:              { keywords: ['DocumentType'], should_presence: true },
-      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: true },   # This should be parsed first
-      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: true }, # FY/Q1/Q2/Q3/Q4
-      amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true },             # usually be false, need to check when to be true
-      registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true },
-      period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true },
-      cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true },
-      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false }
+    STATEMENT_BASIC_INFO_FIELDS = {
+      document_type:              { keywords: ['DocumentType'], should_presence: true, type: String },
+      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: false, type: Integer },   # This should be parsed first
+      fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: false, type: String }, # FY/Q1/Q2/Q3/Q4
+      curr_fiscal_year_end_date:  { keywords: ['CurrentFiscalYearEndDate'], should_presence: false, type: String },
+      amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true, type: TrueClass },  # usually be false, need to check when to be true
+      registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true, type: String},
+      period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true, type: String },
+      cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true, type: String },
+      trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false, type: String },
+      category:                   { keywords: ['EntityFilerCategory'], should_presence: true, type: String }
     }
 
     # FD2013Q4YTD / D2013Q3 / FD2013Q2QTD / ...
     REGEX_STR_TYPE1 = '^[FD]+[0-9]{4}Q[1-4][QYTD]{0,3}'
 
-    @@multi_mapping_fields = {
+    STATEMENT_FIELDS = {
 
       # 營收
       revenue:                    { keywords: ['Revenues',
                                                'SalesRevenueNet',
-                                               'SalesRevenueServicesNet'],
+                                               'SalesRevenueServicesNet',
+                                               'SalesRevenueGoodsNet'], # FSLR
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # 毛利
       gross_profit:               { keywords: ['GrossProfit'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 營業利益
-      operating_income:           { keywords: ['OperatingIncomeLoss',
-                                               'OperatingExpenses'], # HD
+      operating_income:           { keywords: ['OperatingIncomeLoss'],
+                                               # 'OperatingExpenses'], # HD
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # 稅前淨利
       net_income_beforoe_tax:     { keywords: ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
@@ -52,12 +55,15 @@ module SecStatementParser
                                                'CostsAndExpenses'],
                                     regex_str: REGEX_STR_TYPE1, should_presence: false },
       # EPS
-      eps_basic:                  { keywords: ['EarningsPerShareBasic'],
+      eps_basic:                  { keywords: ['EarningsPerShareBasic',
+                                               'IncomeLossFromContinuingOperationsPerBasicAndDilutedShare'], # TSLA tsla-20111231.xml
                                     regex_str: REGEX_STR_TYPE1, should_presence: true },
       # EPS diluted
-      eps_diluted:                { keywords: ['EarningsPerShareDiluted'],
+      eps_diluted:                { keywords: ['EarningsPerShareDiluted',
+                                               'IncomeLossFromContinuingOperationsPerBasicAndDilutedShare'], # TSLA tsla-20111231.xml
                                     regex_str: REGEX_STR_TYPE1, should_presence: true }
     }
+
 
     def self.parse(input)
       statement = {}
@@ -160,30 +166,30 @@ module SecStatementParser
           when 1
             case contextRef
             when /^[FD]+#{fiscal_year}Q1YTD$/ # ex: FD2013Q1YTD => xxx_q1
-                eval "result[:#{field}_q1] = node.text.chomp"
+              eval "result[:#{field}_q1] = node.text.chomp"
             when /^[FD]+#{fiscal_year}Q[2-3]YTD$/ # ex: FD2013Q2YTD => xxx_q2ytd
-                eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q4YTD$/ # ex: FD2013Q4YTD => xxx_fy
-                eval "result[:#{field}_fy] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q[1-4]$/ # ex: FD2013Q1 => xxx_q1
-                eval "result[:#{field}_q#{contextRef[-1]}] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q[1-4]QTD$/ # ex: FD2013Q2 => xxx_q2
-                eval "result[:#{field}_q#{contextRef[-4]}] = node.text.chomp"
-                end # case contextRef
+              eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q4YTD$/ # ex: FD2013Q4YTD => xxx_fy
+             eval "result[:#{field}_fy] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]$/ # ex: FD2013Q1 => xxx_q1
+              eval "result[:#{field}_q#{contextRef[-1]}] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]QTD$/ # ex: FD2013Q2 => xxx_q2
+             eval "result[:#{field}_q#{contextRef[-4]}] = node.text.chomp"
+            end # case contextRef
             # 2nd regex set
           when 2
             case contextRef
             when /^[FD]+#{fiscal_year}Q1YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
-                eval "result[:#{field}_q1] = node.text.chomp"
+              eval "result[:#{field}_q1] = node.text.chomp"
             when /^[FD]+#{fiscal_year}Q[2-3]YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1YTD
-                eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q4YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q4YTD
-                eval "result[:#{field}_fy] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q[1-4]_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1
-                eval "result[:#{field}_q#{contextRef[-62]}] = node.text.chomp"
-                when /^[FD]+#{fiscal_year}Q[1-4]QTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q2
-                eval "result[:#{field}_q#{contextRef[-65]}] = node.text.chomp"
-                end # case contextRef
+              eval "result[:#{field}_q#{contextRef[-4]}ytd] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q4YTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q4YTD
+              eval "result[:#{field}_fy] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q1
+              eval "result[:#{field}_q#{contextRef[-62]}] = node.text.chomp"
+            when /^[FD]+#{fiscal_year}Q[1-4]QTD_us-gaap_StatementClassOfStockAxis_us-gaap_CommonClassAMember$/ # ex: FD2013Q2
+              eval "result[:#{field}_q#{contextRef[-65]}] = node.text.chomp"
+            end # case contextRef
           end
         end # nodes.each do |node|
 

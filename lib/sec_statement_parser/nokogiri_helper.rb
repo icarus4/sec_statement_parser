@@ -7,4 +7,16 @@ class Nokogiri::XML::NodeSet
     end
     return array
   end
+
+  def remove_subnode_if_contains_element!(element)
+    self.dup.each do |node|
+      self.delete(node) if node.xpath(".//#{element}").any?
+    end
+  end
+
+  def remove_subnode_if_not_contains_element!(element)
+    self.dup.each do |node|
+      self.delete(node) if node.xpath(".//#{element}").empty?
+    end
+  end
 end
