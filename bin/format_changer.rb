@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby -wU
+
 require 'json'
 require 'pp'
 
