@@ -62,9 +62,6 @@ module SecStatementParser
           match_count_for_current_keyword_set = 0
           found_values = []
 
-          # generate field name
-          field_name = generate_field_symbol(field, context_ref_string, dates, @results[:fiscal_period])
-
           # for each keyword
           rules[:keywords].each do |keyword|
 
@@ -96,7 +93,7 @@ module SecStatementParser
             add_to_multi_results_fields(field)
           end
 
-          @results[field_name.to_sym] = found_values.first
+          fill_value_to_results(dates[:period], field, found_values.first)
 
         end # context_refs.each do |context_ref_string, dates|
 
@@ -111,46 +108,20 @@ module SecStatementParser
       end # SecStatementFields::STATEMENT_FIELDS.each do |field, rules|
     end # def parse_statement_fields(context_refs_hash)
 
+    def fill_value_to_results(days, field, value)
+      @results[:last_3month_data]  = {} unless @results.has_key?(:last_3month_data)
+      @results[:last_12month_data] = {} unless @results.has_key?(:last_12month_data)
 
-    # CAUTIONS:
-    # This fuction (generate_field_symbol) ONLY works when dates' end_date is equal to DocumentPeriodEndDate
-    def generate_field_symbol(field, context_ref_string, dates, fiscal_period)
-      # TYPE1_REGEX = '^[FD]+[0-9]{4}Q[1-4][QYTD]{0,3}'
-      tmp = ""
-      if context_ref_string =~ Regexp.new(SecStatementFields::REGEX_STR_TYPE1)
-        case context_ref_string
-        when /^[FD]+[0-9]{4}Q1YTD$/ # ex: FD2013Q1YTD => xxx_q1
-          tmp = "#{field.to_s}_q1"
-        when /^[FD]+[0-9]{4}Q[2-3]{1}YTD$/ # ex: FD2013Q2YTD => xxx_q2ytd
-          tmp = "#{field.to_s}_q#{context_ref_string[-4]}ytd"
-        when /^[FD]+[0-9]{4}Q4YTD$/ # ex: FD2013Q4YTD => xxx_fy
-          tmp = "#{field.to_s}_fy"
-        when /^[FD]+[0-9]{4}Q[1-4]{1}$/ # ex: FD2013Q1 => xxx_q1
-          tmp = "#{field.to_s}_q#{context_ref_string[-1]}"
-        when /^[FD]+[0-9]{4}Q[1-4]{1}QTD$/ # ex: FD2013Q2 => xxx_q2
-          tmp = "#{field.to_s}_q#{context_ref_string[-4]}"
-        else
-          raise "Exception case: context_ref_string: #{context_ref_string}"
-        end # case contextRef
-
-        raise "Error output string: #{tmp}" if tmp !~ /_q[1-4]$/ && tmp !~ /_q[2-4]ytd$/ && tmp !~ /_fy$/
-
+      case days
+      when MIN_DAYS_IN_A_QUARTER..MAX_DAYS_IN_A_QUARTER
+        period = :last_3month_data
+      when MIN_DAYS_IN_A_YEAR..MAX_DAYS_IN_A_YEAR
+        period = :last_12month_data
       else
-        case dates[:period]
-        when MIN_DAYS_IN_A_QUARTER..MAX_DAYS_IN_A_QUARTER
-          tmp = "#{field.to_s}_this_quarter"
-        when MIN_DAYS_IN_A_YEAR..MAX_DAYS_IN_A_YEAR
-          tmp = "#{field.to_s}_fy"
-        else
-          raise "period not matched: #{dates[:period]}"
-        end
-
-        if context_ref_string !~ /^eol_/
-          puts "Unknow contextRef type: #{context_ref_string}".light_cyan
-        end
+        raise "Error period"
       end
 
-      return tmp
+      @results[period][field] = value
     end
 
     def parse_context_refs(end_date)
