@@ -68,7 +68,7 @@ stocks.each do |stock, reports| # stocks
         fail_array << stock unless fail_array.include? stock
       else
         pp result
-        statement_hash["y#{result[:fiscal_year]}".to_sym] = result
+        statement_hash["y#{result[:year]}".to_sym] = result
       end
     end
   end

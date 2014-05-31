@@ -25,7 +25,7 @@ module SecStatementParser
       @results = {}
       init_results_hash
       parse_statement_basic_info
-      context_refs_hash = parse_context_refs(@results[:period_end_date])
+      context_refs_hash = parse_context_refs(@results[:fiscal_period_end_date])
       parse_statement_fields(context_refs_hash)
       return @results
     end
@@ -172,10 +172,10 @@ module SecStatementParser
     # Guess nil fields by known fields
     def fill_in_nil_fields_by_guess
       # Fiscal year
-      # FIXME: year of period_end_date may not be exactly the same with fiscal_year
-      if @results[:fiscal_year].nil?
-        @results[:fiscal_year] = Date.parse(@results[:period_end_date]).year.to_s
-        add_to_guess_fields(:fiscal_year)
+      # FIXME: year of fiscal_period_end_date may not be exactly the same with :year
+      if @results[:year].nil?
+        @results[:year] = Date.parse(@results[:fiscal_period_end_date]).year.to_s
+        add_to_guess_fields(:year)
       end
 
       # Fiscal period
@@ -184,7 +184,7 @@ module SecStatementParser
           @results[:fiscal_period] = 'FY'
         elsif @results[:document_type] == '10-Q'
 
-          date = Date.parse(@results[:period_end_date])
+          date = Date.parse(@results[:fiscal_period_end_date])
 
           if date.month == 3 && date.day == 31
             @results[:fiscal_period] = 'Q1'

@@ -6,12 +6,12 @@ module SecStatementParser
 
     STATEMENT_BASIC_INFO_FIELDS = {
       document_type:              { keywords: ['DocumentType'], should_presence: true, type: String },
-      fiscal_year:                { keywords: ['DocumentFiscalYearFocus'], should_presence: false, type: Integer },   # This should be parsed first
+      year:                       { keywords: ['DocumentFiscalYearFocus'], should_presence: false, type: Integer },   # This should be parsed first
       fiscal_period:              { keywords: ['DocumentFiscalPeriodFocus'], should_presence: false, type: String }, # FY/Q1/Q2/Q3/Q4
       curr_fiscal_year_end_date:  { keywords: ['CurrentFiscalYearEndDate'], should_presence: false, type: String },
       amendment_flag:             { keywords: ['AmendmentFlag'], should_presence: true, type: TrueClass },  # usually be false, need to check when to be true
       registrant_name:            { keywords: ['EntityRegistrantName'], should_presence: true, type: String},
-      period_end_date:            { keywords: ['DocumentPeriodEndDate'], should_presence: true, type: String },
+      fiscal_period_end_date:     { keywords: ['DocumentPeriodEndDate'], should_presence: true, type: String },
       cik:                        { keywords: ['EntityCentralIndexKey'], should_presence: true, type: String },
       trading_symbol:             { keywords: ['TradingSymbol'], should_presence: false, type: String },
       category:                   { keywords: ['EntityFilerCategory'], should_presence: true, type: String }
@@ -157,7 +157,7 @@ module SecStatementParser
         nodes = xml.xpath("//#{keyword}")
         next if nodes.nil?
 
-        fiscal_year = statement[:fiscal_year]
+        fiscal_year = statement[:year]
         nodes.each do |node|
 
           contextRef = node.attr('contextRef')
