@@ -6,7 +6,7 @@ require 'sec_statement_parser/version'
 Gem::Specification.new do |spec|
   spec.name          = 'sec_statement_parser'
   spec.version       = SecStatementParser::VERSION
-  spec.date          = '2014-05-30'
+  spec.date          = '2014-05-31'
   spec.authors       = ['Gary Chu']
   spec.email         = 'icarus4.chu@gmail.com'
   spec.description   = %q{A gem for parsing stock financial statement from SEC Edgar}
@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files`.split($/)
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.executables   = spec.files.grep(%r{^(?!bin\/output)bin}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
