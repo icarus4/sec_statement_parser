@@ -168,6 +168,7 @@ module SecStatementParser
         raise_error_if_nil_and_should_presence(rule[:should_presence], @results[field], field)
       end
 
+      @results[:year] = @results[:year].to_i unless @results[:year].nil?
       @results[:statement_link] = @statement_link
 
       fill_in_nil_fields_by_guess
@@ -178,7 +179,7 @@ module SecStatementParser
       # Fiscal year
       # FIXME: year of fiscal_period_end_date may not be exactly the same with :year
       if @results[:year].nil?
-        @results[:year] = Date.parse(@results[:fiscal_period_end_date]).year.to_s
+        @results[:year] = Date.parse(@results[:fiscal_period_end_date]).year.to_i
         add_to_guess_fields(:year)
       end
 
