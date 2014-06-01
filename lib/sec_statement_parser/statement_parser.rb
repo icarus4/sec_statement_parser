@@ -73,7 +73,7 @@ module SecStatementParser
             # skip if no result found
             next if node.empty?
             # one keyword should find only one result
-            raise "Find #{node.length} results by \"#{keyword}\", expect 1 result" if node.length > 1
+            raise ParseError, "Find #{node.length} results by \"#{keyword}\", expect 1 result" if node.length > 1
 
             found_values << node.first.text.to_f_or_i
             match_count_for_current_keyword_set += 1
@@ -100,7 +100,7 @@ module SecStatementParser
         if match_count_for_current_context_ref_set == 0
           add_to_zero_result_fields(field)
           if rules[:should_presence]
-            raise "No result found for #{field} with contextRef set: #{context_refs_hash}"
+            raise ParseError, "No result found for #{field} with contextRef set: #{context_refs_hash}"
           else
             @results[field] = nil
           end
@@ -118,7 +118,7 @@ module SecStatementParser
       when MIN_DAYS_IN_A_YEAR..MAX_DAYS_IN_A_YEAR
         period = :last_12month_data
       else
-        raise "Error period"
+        raise ParseError, "Error period"
       end
 
       @results[period][field] = value
@@ -154,7 +154,7 @@ module SecStatementParser
 
       if context_refs.length == 0
         ap nodes
-        raise "Cannot find context refs"
+        raise ParseError, "Cannot find context refs"
       end
 
       return context_refs
@@ -198,7 +198,7 @@ module SecStatementParser
             # TODO...
           end
         else
-          raise "Wrong document type: #{@results[:document_type]}"
+          raise ParseError, "Wrong document type: #{@results[:document_type]}"
         end
         add_to_guess_fields(:fiscal_period)
       end
@@ -214,13 +214,13 @@ module SecStatementParser
       when 1
         return node.text
       else
-        raise "This keyword (#{keyword}) should NOT has multiple results" if node.length > 1
+        raise ParseError "This keyword (#{keyword}) should NOT has multiple results" if node.length > 1
       end
     end
 
     def raise_error_if_nil_and_should_presence(should_presence, value, field)
       if should_presence && value.nil?
-        raise "#{field} should presence"
+        raise ParseError, "#{field} should presence"
       end
     end
 
