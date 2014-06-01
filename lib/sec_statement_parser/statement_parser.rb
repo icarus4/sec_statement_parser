@@ -9,7 +9,9 @@ module SecStatementParser
     end
 
     def parse(input)
-      @xml = open_xml(input)
+      tmp = open_xml(input)
+      @xml = tmp[:xml]
+      @statement_link = tmp[:url]
       return parse_statement
     end
 
@@ -166,6 +168,8 @@ module SecStatementParser
         raise_error_if_nil_and_should_presence(rule[:should_presence], @results[field], field)
       end
 
+      @results[:statement_link] = @statement_link
+
       fill_in_nil_fields_by_guess
     end
 
@@ -228,12 +232,15 @@ module SecStatementParser
     def open_xml(input)
       if input.is_a? String
         puts "opening #{input}"
-        return open_xml_link(input)
+        xml = open_xml_link(input)
+        url = input
       elsif input.is_a? File
-        return open_xml_file(input)
+        xml = open_xml_file(input)
+        url = nil
       else
         raise "Error input type"
       end
+      return { xml: xml, url: url }
     end
 
     def open_xml_link(link)
