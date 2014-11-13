@@ -14,9 +14,12 @@ module SecStatementParser
       @statements = []
     end
 
-    def download(symbol=@symbol)
-      @symbol = validate_symbol(symbol) unless symbol.equal_ignore_case?(@symbol)
-      download_statements
+    def download(type='both', overwrite=false)
+      raise 'type only accept both,10-K,10-Q' unless ['both', '10-K', '10-Q'].include?(type)
+      type = :annual_report if type == '10-K'
+      type = :quarterly_report if type == '10-Q'
+      type = :both if type == 'both'
+      download_statements(type, overwrite)
     end
 
     def parse_local(symbol=@symbol)
@@ -83,25 +86,29 @@ module SecStatementParser
       end
     end
 
-    def _get_list
-      StatementUrlList::get @symbol
+    def _get_list(type=:both)
+      StatementUrlList::get(@symbol, type)
     end
 
-    def download_statements
+    def download_statements(type=:both, overwrite=false)
       base_path = "#{STATEMENT_DOWNLOAD_DIR}/#{@symbol}"
       annual_report_path = "#{base_path}/10-K"
       quarterly_report_path = "#{base_path}/10-Q"
 
-      @url_list = _get_list
+      @url_list = _get_list(type)
 
       # Create dirs to save statements
-      create_dir_if_path_not_exist(annual_report_path)
-      create_dir_if_path_not_exist(quarterly_report_path)
+      create_dir_if_path_not_exist(annual_report_path) if type == :both || type == :annual_report
+      create_dir_if_path_not_exist(quarterly_report_path) if type == :both || type == :quarterly_report
 
-      @url_list.each do |type, urls|
-        next if urls.nil?
-        urls.each do |url|
-          download_dir = (type == :annual_report) ? annual_report_path : quarterly_report_path
+      @url_list.each do |_type, _urls|
+        next if _urls.nil?
+        if type != :both
+          next if type != _type
+        end
+        download_dir = (_type == :annual_report) ? annual_report_path : quarterly_report_path
+        skip_flag = overwrite ? '' : '-nc'
+        _urls.each do |url|
           # -nc, --no-clobber              skip downloads that would download to existing files (overwriting them).
           # -P,  --directory-prefix=PREFIX  save files to PREFIX/...
           # -t,  --tries=NUMBER            set number of retries to NUMBER (0 unlimits).
@@ -110,7 +117,7 @@ module SecStatementParser
           # -c,  --continue                resume getting a partially-downloaded file.
           # -q,  --quiet                   quiet (no output).
           print "Downloading #{url.split('/')[-1]} ..."
-          puts "done".green if system("wget #{url} -P #{download_dir} -t 3 -q") == true
+          puts "done".green if system("wget #{url} -P #{download_dir} -t 3 -q #{skip_flag}") == true
         end
       end
 

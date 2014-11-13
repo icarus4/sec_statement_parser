@@ -12,14 +12,14 @@ module SecStatementParser
     ENTRIES_PER_PAGE = 100
     EARLIEST_YEAR_OF_XBRL = 2010
 
-    def self.get(symbol, start_year: StatementUrlList::EARLIEST_YEAR_OF_XBRL, end_year: Date.today.strftime("%Y").to_i)
+    def self.get(symbol, type=:both, start_year: StatementUrlList::EARLIEST_YEAR_OF_XBRL, end_year: Date.today.strftime("%Y").to_i)
       raise "start_year > end_year" if start_year > end_year
       raise "invalid start_year" unless year_range_is_valid(start_year)
       raise "invalid end_year" unless year_range_is_valid(end_year)
 
       list = {}
-      list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT)
-      list_10Q = _get_list_of_xbrl_url(symbol, QUARTERLY_REPORT)
+      list_10K = _get_list_of_xbrl_url(symbol, ANNUAL_REPORT) if type == :both || type == :annual_report
+      list_10Q = _get_list_of_xbrl_url(symbol, QUARTERLY_REPORT) if type == :both || type == :quarterly_report
 
       return nil if list_10Q == nil and list_10K == nil
 
