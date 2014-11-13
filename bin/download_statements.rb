@@ -38,7 +38,7 @@ CSV.foreach(STOCK_LIST_FILE) do |row|
   ticker = row[0].strip
 
   if check_for_skip_downloaded_stock == true
-    puts "#{ticker} #{last_downloaded_stock}"
+    puts "skip #{ticker}"
     next if ticker != last_downloaded_stock
     check_for_skip_downloaded_stock = false
   end

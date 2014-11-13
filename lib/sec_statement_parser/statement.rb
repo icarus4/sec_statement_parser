@@ -14,7 +14,7 @@ module SecStatementParser
       @statements = []
     end
 
-    def download(type='both', overwrite=false)
+    def download(type='both', overwrite=true)
       raise 'type only accept both,10-K,10-Q' unless ['both', '10-K', '10-Q'].include?(type)
       type = :annual_report if type == '10-K'
       type = :quarterly_report if type == '10-Q'
@@ -90,7 +90,7 @@ module SecStatementParser
       StatementUrlList::get(@symbol, type)
     end
 
-    def download_statements(type=:both, overwrite=false)
+    def download_statements(type=:both, overwrite=true)
       base_path = "#{STATEMENT_DOWNLOAD_DIR}/#{@symbol}"
       annual_report_path = "#{base_path}/10-K"
       quarterly_report_path = "#{base_path}/10-Q"
