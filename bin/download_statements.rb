@@ -21,6 +21,12 @@ class String
   end
 end
 
+# catch ctrl-c & kill
+interrupted = false
+trap('INT') { interrupted = true }
+trap('TERM') { interrupted = true }
+
+
 # determine start from first stock or last downloaded stock
 start_from_last_downloaded_stock = true
 if ARGV[0] == 'restart'
@@ -31,8 +37,8 @@ else
   puts "download from last downloaded stock: #{last_downloaded_stock}"
 end
 
-
 check_for_skip_downloaded_stock = start_from_last_downloaded_stock
+
 
 CSV.foreach(STOCK_LIST_FILE) do |row|
   ticker = row[0].strip
@@ -50,7 +56,13 @@ CSV.foreach(STOCK_LIST_FILE) do |row|
     sleep 3
   rescue
     ticker.append_to_file(FAIL_FILE)
-    next
+  end
+
+  # catch ctrl-c or kill
+  if interrupted == true
+    puts "signal INT/TERM catched, exiting..."
+    sleep 1
+    break
   end
 end
 
