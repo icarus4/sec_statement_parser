@@ -98,8 +98,8 @@ module SecStatementParser
       @url_list = _get_list(type)
 
       # Create dirs to save statements
-      create_dir_if_path_not_exist(annual_report_path) if type == :both || type == :annual_report
-      create_dir_if_path_not_exist(quarterly_report_path) if type == :both || type == :quarterly_report
+      # create_dir_if_path_not_exist(annual_report_path) if type == :both || type == :annual_report
+      # create_dir_if_path_not_exist(quarterly_report_path) if type == :both || type == :quarterly_report
 
       @url_list.each do |_type, _urls|
         next if _urls.nil?
@@ -117,7 +117,7 @@ module SecStatementParser
           # -c,  --continue                resume getting a partially-downloaded file.
           # -q,  --quiet                   quiet (no output).
           print "Downloading #{url.split('/')[-1]} ..."
-          puts "done".green if system("wget #{url} -P #{download_dir} -t 3 -q #{skip_flag}") == true
+          puts "done".green if system("wget #{url} -P #{download_dir} -t 3 -q #{skip_flag} -N") == true
         end
       end
 
