@@ -28,11 +28,15 @@ trap('TERM') { interrupted = true }
 
 
 # determine start from first stock or last downloaded stock
-start_from_last_downloaded_stock = true
+start_from_last_downloaded_stock = false
+stock_list_file = STOCK_LIST_FILE
 if ARGV[0] == 'restart'
-  start_from_last_downloaded_stock = false
   puts "download from first stock"
+elsif ARGV[0] == 'fail'
+  puts "download from fail list"
+  stock_list_file = FAIL_FILE
 else
+  start_from_last_downloaded_stock = true
   last_downloaded_stock = IO.read(LAST_DOWNLOADED_STOCK_FILE).strip
   puts "download from last downloaded stock: #{last_downloaded_stock}"
 end
@@ -40,7 +44,7 @@ end
 check_for_skip_downloaded_stock = start_from_last_downloaded_stock
 
 
-CSV.foreach(STOCK_LIST_FILE) do |row|
+CSV.foreach(stock_list_file) do |row|
   ticker = row[0].strip
 
   if check_for_skip_downloaded_stock == true
